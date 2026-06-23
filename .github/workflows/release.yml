@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-sidecar:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            python: '3.12'
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            python: '3.12'
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            python: '3.12'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install ffmpeg (Ubuntu)
+        if: matrix.os == 'ubuntu-22.04'
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install ffmpeg (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install ffmpeg
+
+      - name: Install ffmpeg (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install ffmpeg -y
+
+      - name: Install Python dependencies
+        working-directory: sidecar
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools==70.0.0
+          pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
+          pip install openai-whisper torch PyInstaller
+
+      - name: Build sidecar
+        working-directory: sidecar
+        run: python build.py
+
+      - name: Upload sidecar binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: sidecar-${{ matrix.target }}
+          path: src-tauri/binaries/markify-sidecar-*
+          retention-days: 1
+
+  build-app:
+    needs: build-sidecar
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            args: '--target aarch64-apple-darwin'
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ''
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ''
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Download sidecar binary
+        uses: actions/download-artifact@v4
+        with:
+          name: sidecar-${{ matrix.target }}
+          path: src-tauri/binaries/
+
+      - name: Fix binary permissions (Mac/Linux)
+        if: matrix.os != 'windows-latest'
+        run: chmod +x src-tauri/binaries/*
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Markify ${{ github.ref_name }}'
+          releaseBody: |
+            ## Instaladores
+
+            - **macOS** (Apple Silicon): `.dmg`
+            - **Windows**: `.msi` o `.exe`
+            - **Linux**: `.AppImage` o `.deb`
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
