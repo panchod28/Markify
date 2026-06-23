@@ -1,0 +1,10 @@
+{
+  "conversion": {
+    "password_protected": "El archivo está protegido con contraseña",
+    "file_corrupted": "No se pudo leer el archivo (puede estar dañado)",
+    "no_text_found": "No se encontró texto en el archivo",
+    "audio_too_short": "El audio es muy corto o no contiene voz detectada",
+    "file_not_found": "No se pudo encontrar el archivo",
+    "unknown": "Error inesperado al convertir el archivo"
+  }
+}

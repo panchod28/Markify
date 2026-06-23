@@ -1,0 +1,98 @@
+{
+  "app": {
+    "name": "Markify"
+  },
+  "dropzone": {
+    "title": "Arrastra tus archivos aquí",
+    "subtitle": "Documentos, audio y video — conversión a Markdown",
+    "supported": "PDF, DOCX, XLSX, PPTX, HTML, CSV, MP3, MP4, WAV y más",
+    "dragActive": "Suelta los archivos aquí",
+    "dragActiveCompact": "Soltar aquí",
+    "dialogFilter": "Archivos soportados"
+  },
+  "fileList": {
+    "filesCount_one": "{{count}} archivo",
+    "filesCount_other": "{{count}} archivos",
+    "clearAll": "Limpiar todo",
+    "selectFiles": "Seleccionar archivos",
+    "addMore": "Añadir archivos",
+    "convert": "Convertir",
+    "sanitizedName": "Se guardará como:",
+    "removeFile": "Eliminar archivo"
+  },
+  "processing": {
+    "title": "Convirtiendo archivos...",
+    "progress": "{{completed}} de {{total}} completados",
+    "cancel": "Cancelar",
+    "cancelling": "Cancelando...",
+    "status": {
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "completed": "Completo",
+      "error": "Error"
+    }
+  },
+  "results": {
+    "successAll_one": "{{count}} archivo convertido correctamente",
+    "successAll_other": "{{count}} archivos convertidos correctamente",
+    "successPartial": "{{completed}} de {{total}} archivos convertidos",
+    "failedCount_one": "{{count}} con error",
+    "failedCount_other": "{{count}} con errores",
+    "saveMd": "Guardar .md",
+    "saveZip": "Guardar ZIP",
+    "retryFailed": "Reintentar fallidos",
+    "retryAll": "Reintentar todos",
+    "newConversion": "Nueva conversión",
+    "openInFolder": "Mostrar en carpeta",
+    "savedAt": "Guardado en:",
+    "allFailedTitle": "No se pudo convertir ningún archivo",
+    "allFailedDescription": "Revisa los errores en la lista."
+  },
+  "preview": {
+    "selectFile": "Selecciona un archivo de la lista para ver su contenido",
+    "rendered": "Vista previa",
+    "raw": "Markdown crudo"
+  },
+  "whisperModal": {
+    "title": "Modelo de Whisper",
+    "description": "Para transcribir audio necesitas descargar el modelo Whisper (145 MB).",
+    "downloadAndContinue": "Descargar y continuar",
+    "cancel": "Cancelar",
+    "downloading": "Descargando modelo...",
+    "progress": "{{percent}}% — {{downloaded}} MB de {{total}} MB",
+    "retry": "Reintentar descarga"
+  },
+  "confirmDialog": {
+    "cancelConversion": {
+      "title": "¿Cancelar conversión?",
+      "description": "Los archivos procesados hasta ahora se descartarán.",
+      "confirm": "Sí, cancelar",
+      "dismiss": "Continuar convirtiendo"
+    },
+    "clearAll": {
+      "title": "¿Limpiar la lista?",
+      "description_one": "Se eliminará {{count}} archivo de la lista.",
+      "description_other": "Se eliminarán {{count}} archivos de la lista.",
+      "confirm": "Limpiar",
+      "dismiss": "Cancelar"
+    }
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema",
+    "tooltip": "Tema: {{mode}}"
+  },
+  "language": {
+    "en": "English",
+    "es": "Español"
+  },
+  "errors": {
+    "fileTooBig": "{{filename}} es demasiado grande",
+    "batchTooBig": "El lote supera el tamaño máximo de 2 GB",
+    "tooManyFiles": "Máximo {{count}} archivos por lote",
+    "duplicate": "{{filename}} ya está en la lista",
+    "unsupportedFormat": "Formato no soportado: .{{ext}}",
+    "moreErrors": "y {{count}} más..."
+  }
+}

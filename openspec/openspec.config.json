@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "project": "markify",
+  "specsDir": "openspec/specs",
+  "archiveDir": "openspec/archive",
+  "description": "Markify — Document & Audio to Markdown Converter",
+  "stack": ["tauri-v2", "react-18", "typescript", "python-sidecar", "markitdown", "whisper"]
+}

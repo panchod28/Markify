@@ -1,0 +1,98 @@
+{
+  "app": {
+    "name": "Markify"
+  },
+  "dropzone": {
+    "title": "Drop your files here",
+    "subtitle": "Documents, audio and video — conversion to Markdown",
+    "supported": "PDF, DOCX, XLSX, PPTX, HTML, CSV, MP3, MP4, WAV and more",
+    "dragActive": "Drop the files here",
+    "dragActiveCompact": "Drop here",
+    "dialogFilter": "Supported files"
+  },
+  "fileList": {
+    "filesCount_one": "{{count}} file",
+    "filesCount_other": "{{count}} files",
+    "clearAll": "Clear all",
+    "selectFiles": "Select files",
+    "addMore": "Add files",
+    "convert": "Convert",
+    "sanitizedName": "Will be saved as:",
+    "removeFile": "Remove file"
+  },
+  "processing": {
+    "title": "Converting files...",
+    "progress": "{{completed}} of {{total}} completed",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling...",
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "error": "Error"
+    }
+  },
+  "results": {
+    "successAll_one": "{{count}} file converted successfully",
+    "successAll_other": "{{count}} files converted successfully",
+    "successPartial": "{{completed}} of {{total}} files converted",
+    "failedCount_one": "{{count}} with error",
+    "failedCount_other": "{{count}} with errors",
+    "saveMd": "Save .md",
+    "saveZip": "Save ZIP",
+    "retryFailed": "Retry failed",
+    "retryAll": "Retry all",
+    "newConversion": "New conversion",
+    "openInFolder": "Show in folder",
+    "savedAt": "Saved at:",
+    "allFailedTitle": "Could not convert any file",
+    "allFailedDescription": "Check the errors in the list."
+  },
+  "preview": {
+    "selectFile": "Select a file from the list to view its content",
+    "rendered": "Preview",
+    "raw": "Raw markdown"
+  },
+  "whisperModal": {
+    "title": "Whisper Model",
+    "description": "To transcribe audio you need to download the Whisper model (145 MB).",
+    "downloadAndContinue": "Download and continue",
+    "cancel": "Cancel",
+    "downloading": "Downloading model...",
+    "progress": "{{percent}}% — {{downloaded}} MB of {{total}} MB",
+    "retry": "Retry download"
+  },
+  "confirmDialog": {
+    "cancelConversion": {
+      "title": "Cancel conversion?",
+      "description": "Files processed so far will be discarded.",
+      "confirm": "Yes, cancel",
+      "dismiss": "Keep converting"
+    },
+    "clearAll": {
+      "title": "Clear the list?",
+      "description_one": "{{count}} file will be removed from the list.",
+      "description_other": "{{count}} files will be removed from the list.",
+      "confirm": "Clear",
+      "dismiss": "Cancel"
+    }
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "tooltip": "Theme: {{mode}}"
+  },
+  "language": {
+    "en": "English",
+    "es": "Español"
+  },
+  "errors": {
+    "fileTooBig": "{{filename}} is too large",
+    "batchTooBig": "The batch exceeds the maximum size of 2 GB",
+    "tooManyFiles": "Maximum {{count}} files per batch",
+    "duplicate": "{{filename}} is already in the list",
+    "unsupportedFormat": "Unsupported format: .{{ext}}",
+    "moreErrors": "and {{count}} more..."
+  }
+}
