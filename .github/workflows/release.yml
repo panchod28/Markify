@@ -126,4 +126,5 @@ jobs:
             - **Linux**: `.AppImage` o `.deb`
           releaseDraft: true
           prerelease: false
+          tauriScript: npm run build
           args: ${{ matrix.args }}
