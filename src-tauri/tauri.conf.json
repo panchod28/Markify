@@ -22,7 +22,8 @@
         "resizable": true,
         "decorations": true,
         "transparent": false,
-        "shadow": true
+        "shadow": true,
+        "devtools": true
       }
     ],
     "security": {
