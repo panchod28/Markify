@@ -63,6 +63,8 @@ jobs:
 
   build-app:
     needs: build-sidecar
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
