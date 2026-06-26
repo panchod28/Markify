@@ -23,7 +23,7 @@ export function ResultsSidebar({
   const { t } = useTranslation();
 
   return (
-    <div className={cn('flex flex-col w-[280px] flex-shrink-0 border-r border-border', className)}>
+    <div className={cn('flex flex-col min-w-[220px] max-w-[300px] w-[25%] flex-shrink-0 border-r border-border', className)}>
       <div className="px-4 py-4 border-b border-border">
         <div className="flex items-center gap-2 mb-1">
           <CheckCircle size={20} className="text-success" />

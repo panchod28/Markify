@@ -15,6 +15,10 @@ interface PreviewPanelProps {
 export function PreviewPanel({ content, viewMode, onToggleViewMode, allFailed = false }: PreviewPanelProps) {
   const { t } = useTranslation();
 
+  const MAX_PREVIEW_CHARS = 50_000;
+  const isTruncated = content !== null && content.length > MAX_PREVIEW_CHARS;
+  const displayContent = isTruncated ? content.slice(0, MAX_PREVIEW_CHARS) : content;
+
   if (allFailed) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-tertiary">
@@ -65,13 +69,18 @@ export function PreviewPanel({ content, viewMode, onToggleViewMode, allFailed = 
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
+        {isTruncated && (
+          <div className="mb-4 px-3 py-2 rounded-md bg-surface-secondary border border-border text-xs text-text-secondary">
+            ⚠️ Archivo grande — mostrando los primeros {MAX_PREVIEW_CHARS.toLocaleString()} caracteres de {content!.length.toLocaleString()} totales.
+          </div>
+        )}
         {viewMode === 'rendered' ? (
           <div className="markdown-preview">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent!}</ReactMarkdown>
           </div>
         ) : (
           <pre className="text-sm font-mono text-text-primary whitespace-pre-wrap">
-            <code>{content}</code>
+            <code>{displayContent}</code>
           </pre>
         )}
       </div>

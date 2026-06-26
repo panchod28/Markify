@@ -7,6 +7,11 @@ Lee comandos de stdin (JSON newline-delimited) y procesa según el tipo.
 import sys
 import os
 
+# Fix encoding para Windows: forzar UTF-8 en stdout/stdin
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stdin.reconfigure(encoding='utf-8')
+
 # Asegurar que ffmpeg de Homebrew esté en PATH cuando la app se lanza desde Finder
 if sys.platform == 'darwin':
     _extra = ['/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin']

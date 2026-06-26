@@ -8,32 +8,50 @@ interface ResultFileItemProps {
   onClick: () => void;
 }
 
+function smartTruncate(name: string, maxLength: number = 22): string {
+  if (name.length <= maxLength) return name;
+  const dotIndex = name.lastIndexOf('.');
+  if (dotIndex === -1) return name.slice(0, maxLength - 3) + '...';
+  const ext = name.slice(dotIndex);         // e.g. ".xlsx"
+  const base = name.slice(0, dotIndex);     // nombre sin extensión
+  const charsForBase = maxLength - ext.length - 3; // 3 = "..."
+  if (charsForBase <= 0) return name.slice(0, maxLength - 3) + '...';
+  return base.slice(0, charsForBase) + '...' + ext;
+}
+
 export function ResultFileItem({ file, isSelected, onClick }: ResultFileItemProps) {
   const isClickable = file.status === 'completed';
+  const displayName = smartTruncate(file.originalName, 22);
+  const showTooltip = file.originalName.length > 22;
 
   return (
     <div
       onClick={isClickable ? onClick : undefined}
+      title={showTooltip ? file.originalName : undefined}
       className={`
-        flex items-center gap-3 px-4 py-3 cursor-default
+        flex items-center gap-2 px-3 py-2 pr-4
         ${isClickable ? 'cursor-pointer hover:bg-surface-secondary' : ''}
         ${isSelected ? 'bg-accent-subtle border-l-[3px] border-l-accent' : 'border-l-[3px] border-l-transparent'}
         transition-colors duration-[100ms]
       `}
     >
-      <FileIcon extension={file.extension} size={20} />
+      <div className="flex-shrink-0">
+        <FileIcon extension={file.extension} size={20} />
+      </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text-primary truncate">
-          {file.originalName}
+        <p className="text-sm font-medium text-text-primary">
+          {displayName}
         </p>
         {file.status === 'error' && file.errorMessage && (
           <p className="text-xs text-error mt-0.5 truncate">{file.errorMessage}</p>
         )}
       </div>
 
-      {file.status === 'completed' && <CheckCircle size={16} className="text-success flex-shrink-0" />}
-      {file.status === 'error' && <XCircle size={16} className="text-error flex-shrink-0" />}
+      <div className="flex-shrink-0 ml-1">
+        {file.status === 'completed' && <CheckCircle size={16} className="text-success" />}
+        {file.status === 'error' && <XCircle size={16} className="text-error" />}
+      </div>
     </div>
   );
 }

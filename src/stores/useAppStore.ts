@@ -58,6 +58,12 @@ export const useAppStore = create<AppStore>((set) => ({
         theme: savedTheme ?? 'system',
         language: savedLang ?? 'system',
       });
+      const langToApply = savedLang ?? 'system';
+      const resolved = langToApply === 'system'
+        ? (navigator.language.startsWith('es') ? 'es' : 'en')
+        : langToApply as ResolvedLanguage;
+      set({ resolvedLanguage: resolved });
+      await i18n.changeLanguage(resolved);
     } catch {
       // Si falla la lectura del store, usar valores iniciales
       // (primera ejecución o archivo corrupto)
