@@ -1,5 +1,65 @@
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+.venv/
+
+# ===========================
+# Build outputs
+# ===========================
+dist/
+dist-ssr/
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/binaries/
+
+# Python sidecar build artifacts
+sidecar/.venv/
+sidecar/build/
+sidecar/__pycache__/
+sidecar/*.pyc
+sidecar/*.spec
+sidecar/*.egg-info/
+
+# ===========================
+# Environment & secrets
+# ===========================
+.env
+.env.*
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ===========================
+# AI tooling — local dev config
+# ===========================
+.claude/
+.opencode/
+.agents/
+AGENTS.md
+opencode.json
+
+# ===========================
+# Editor & OS
+# ===========================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===========================
 # Logs
-logs
+# ===========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,31 +67,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Tauri — build artifacts y binarios compilados
-src-tauri/target/
-src-tauri/binaries/
-
-# Python sidecar — entorno virtual y artefactos de compilación
-sidecar/.venv/
-sidecar/build/
-sidecar/__pycache__/
-sidecar/*.pyc
-sidecar/*.spec
-
-# Editor
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.venv/
-.venv/
+# ===========================
+# Misc
+# ===========================
+*.tsbuildinfo
