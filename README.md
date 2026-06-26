@@ -194,8 +194,8 @@ Markify is open source and welcomes contributions! Issues and pull requests in E
 
 ## License
 
-MIT © 2025 [Juan David Rengido](https://github.com/panchod28)
+MIT © 2025 [Juan David Rengifo](https://github.com/panchod28)
 
 ---
 
-Built with by [Juan David Rengido](https://github.com/panchod28)
+Built with by [Juan David Rengifo](https://github.com/panchod28)
