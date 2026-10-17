@@ -67,10 +67,16 @@ def handle_convert(payload: dict):
 
         try:
             warnings = []
-            if category == "document" and path.lower().endswith(".pdf"):
-                # Importación bajo demanda: el motor OCR solo se carga si hay páginas escaneadas.
-                from ocr.pdf_pipeline import convert_pdf
-                result = convert_pdf(path, _cancel_flag, lambda pct, fid=file_id: write_message({
+            ext = os.path.splitext(path)[1].lower()
+            if category == "document" and ext in (".pdf", ".docx", ".pptx"):
+                # Importación bajo demanda: el motor OCR solo se carga si hay algo que reconocer.
+                if ext == ".pdf":
+                    from ocr.pdf_pipeline import convert_pdf as convert_with_ocr
+                elif ext == ".docx":
+                    from ocr.office_images import convert_docx as convert_with_ocr
+                else:
+                    from ocr.office_images import convert_pptx as convert_with_ocr
+                result = convert_with_ocr(path, _cancel_flag, lambda pct, fid=file_id: write_message({
                     "type": "file_progress",
                     "payload": {"fileId": fid, "status": "processing", "progress": pct}
                 }))

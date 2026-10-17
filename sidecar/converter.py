@@ -56,3 +56,11 @@ def convert_document(file_path: str) -> str:
         if "corrupt" in error_str or "invalid" in error_str:
             raise RuntimeError("file_corrupted")
         raise RuntimeError(f"unknown: {e}")
+
+
+def convert_stream(stream, extension: str) -> str:
+    """Igual que convert_document pero desde un flujo en memoria (copia de un PPTX con las imágenes ya leídas)."""
+    content = _md_converter.convert_stream(stream, file_extension=extension).text_content
+    if not content or not content.strip():
+        raise ValueError("No se encontró texto en el archivo")
+    return content

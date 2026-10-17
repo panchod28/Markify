@@ -48,11 +48,17 @@ WARNINGS = {
         "low_confidence_dropped": "Se omitieron {count} líneas con baja confianza de lectura",
         "frames_skipped":         "Solo se procesó el primer fotograma ({count} omitidos)",
         "page_failed":            "La página {page} no se pudo procesar",
+        "image_failed":           "No se pudo leer una imagen del documento",
+        "image_failed_slide":     "No se pudo leer una imagen de la diapositiva {page}",
+        "images_skipped":         "Se omitieron {count} imágenes en un formato no compatible (EMF, WMF o SVG)",
     },
     "en": {
         "low_confidence_dropped": "{count} low-confidence lines were left out",
         "frames_skipped":         "Only the first frame was processed ({count} skipped)",
         "page_failed":            "Page {page} could not be processed",
+        "image_failed":           "An image in the document could not be read",
+        "image_failed_slide":     "An image on slide {page} could not be read",
+        "images_skipped":         "{count} images in an unsupported format (EMF, WMF or SVG) were skipped",
     },
 }
 
@@ -60,7 +66,8 @@ WARNINGS = {
 def issue_to_payload(issue, lang: str = "en") -> dict:
     """PageIssue -> elemento de `warnings` del file_result: {page, stage, code, message}."""
     templates = WARNINGS.get(lang, WARNINGS["en"])
-    template = templates.get(issue.code, issue.code)
+    code = "image_failed_slide" if issue.code == "image_failed" and issue.page else issue.code
+    template = templates.get(code, issue.code)
     return {
         "page": issue.page,
         "stage": issue.stage,
