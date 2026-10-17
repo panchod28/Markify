@@ -18,16 +18,16 @@
 
 ## 2. Fase 1 — Núcleo OCR e imágenes (liberable)
 
-- [ ] 2.1 Crear `sidecar/ocr/diagnostics.py`: `ConversionError`, `PageIssue`, `log_issue()` (stderr, sin contenido ni rutas completas) + tests
-- [ ] 2.2 Ampliar `error_messages.py` con lookup por `code` (ES/EN) conservando el camino actual + tests de compatibilidad
-- [ ] 2.3 Crear `ocr/resources.py` (`resource_path`: `sys._MEIPASS` vs repo) + test en modo normal y simulando frozen
-- [ ] 2.4 Crear `ocr/engine.py` (`OcrLine`, `OcrEngine`, `ENGINES`, `get_engine()` perezoso) y `ocr/rapidocr_engine.py` (det v5 mobile + rec latin v5, `use_cls=False`, rutas explícitas, sin red; test con `socket.connect` bloqueado)
-- [ ] 2.5 Crear `ocr/layout.py` (`lines_to_markdown`: umbral de confianza, columnas, párrafos) + tests unitarios puros
-- [ ] 2.6 Crear `ocr/image_converter.py` (EXIF, RGB, límites, TIFF primer fotograma, warnings agregados) + tests con motor *fake*
-- [ ] 2.7 `main.py`: rama `category == "image"`, envío de `warnings` en `file_result` solo si existen; verificar que stdout sigue siendo solo JSON
-- [ ] 2.8 Script de obtención de modelos con versión + SHA-256 fijados; `build.py`: `--add-data`, `--collect-all rapidocr`, binarios de onnxruntime/cv2; importación OCR perezosa
-- [ ] 2.9 `requirements.txt` completo y acotado; `release.yml` instala desde él; añadir job/paso de `pytest` (incluye `-m ocr`) en macOS y Windows
-- [ ] 2.10 *Smoke test* del binario empaquetado (imagen de prueba por stdin → `file_result` completado) integrado en CI; reportar tamaño y fallar si supera el presupuesto
+- [x] 2.1 Crear `sidecar/ocr/diagnostics.py`: `ConversionError`, `PageIssue`, `log_issue()` (stderr, sin contenido ni rutas completas) + tests
+- [x] 2.2 Ampliar `error_messages.py` con lookup por `code` (ES/EN) conservando el camino actual + tests de compatibilidad
+- [x] 2.3 Crear `ocr/resources.py` (`resource_path`: `sys._MEIPASS` vs repo) + test en modo normal y simulando frozen
+- [x] 2.4 Crear `ocr/engine.py` (`OcrLine`, `OcrEngine`, `ENGINES`, `get_engine()` perezoso) y `ocr/rapidocr_engine.py` (det v5 mobile + rec latin v5, `use_cls=False`, rutas explícitas, sin red; test con `socket.connect` bloqueado)
+- [x] 2.5 Crear `ocr/layout.py` (`lines_to_markdown`: umbral de confianza, columnas, párrafos) + tests unitarios puros
+- [x] 2.6 Crear `ocr/image_converter.py` (EXIF, RGB, límites, TIFF primer fotograma, warnings agregados) + tests con motor *fake*
+- [x] 2.7 `main.py`: rama `category == "image"`, envío de `warnings` en `file_result` solo si existen; verificar que stdout sigue siendo solo JSON
+- [x] 2.8 Script de obtención de modelos con versión + SHA-256 fijados; `build.py`: `--add-data`, `--collect-all rapidocr`, binarios de onnxruntime/cv2; importación OCR perezosa
+- [x] 2.9 `requirements.txt` completo y acotado; `release.yml` instala desde él; añadir job/paso de `pytest` (incluye `-m ocr`) en macOS y Windows
+- [x] 2.10 *Smoke test* del binario empaquetado: `smoke_test.py` convierte la imagen `tests/fixtures/ocr_hello.png` por stdin y verifica el texto (pasa en macOS, 2 imágenes en 3.6 s en total, arranque posterior 2.0 s). El paso de CI ya lo ejecuta; **el control de tamaño en CI queda pendiente** (medido local: 954 MB frente a 850 MB sin OCR, +104 MB)
 - [ ] 2.11 Frontend: `FileCategory 'image'`, `IMAGE_EXTENSIONS`, `getFileCategory`, `FILE_ICON_MAP`/`FileIcon` (icono lucide) + tests vitest de categorías y extensiones existentes sin cambio
 - [ ] 2.12 Frontend: tipos `ConversionWarning`, `warnings?` en evento y archivo, copia en `_handleFileUpdate`; i18n ES/EN de errores nuevos
 - [ ] 2.13 Indicador de avisos (icono + `Tooltip`) en la fila de resultados con tokens existentes; revisión visual en claro/oscuro

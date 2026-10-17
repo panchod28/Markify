@@ -12,6 +12,12 @@ MESSAGES = {
         "audio_too_short":    "El audio es muy corto o no contiene voz detectada",
         "ConnectionError":    "Sin conexión a internet. Verifica tu conexión e intenta de nuevo.",
         "unknown":            "Error inesperado al convertir el archivo",
+        # Códigos de ConversionError (OCR)
+        "no_text_found":          "No se encontró texto en el archivo",
+        "image_decode_failed":    "No se pudo leer la imagen (puede estar dañada)",
+        "image_too_large":        "La imagen es demasiado grande para procesarla",
+        "ocr_engine_unavailable": "El motor de reconocimiento de texto no está disponible",
+        "ocr_failed":             "No se pudo reconocer el texto de la imagen",
     },
     "en": {
         "FileNotFoundError":  "Could not find the file",
@@ -21,8 +27,40 @@ MESSAGES = {
         "audio_too_short":    "The audio is too short or contains no detected speech",
         "ConnectionError":    "No internet connection. Check your connection and try again.",
         "unknown":            "Unexpected error while converting the file",
+        # ConversionError codes (OCR)
+        "no_text_found":          "No text was found in the file",
+        "image_decode_failed":    "Could not read the image (it may be corrupted)",
+        "image_too_large":        "The image is too large to process",
+        "ocr_engine_unavailable": "The text recognition engine is not available",
+        "ocr_failed":             "Could not recognize the text in the image",
     }
 }
+
+# Avisos no fatales (PageIssue.code). {count} / {page} se rellenan en issue_to_payload.
+WARNINGS = {
+    "es": {
+        "low_confidence_dropped": "Se omitieron {count} líneas con baja confianza de lectura",
+        "frames_skipped":         "Solo se procesó el primer fotograma ({count} omitidos)",
+        "page_failed":            "La página {page} no se pudo procesar",
+    },
+    "en": {
+        "low_confidence_dropped": "{count} low-confidence lines were left out",
+        "frames_skipped":         "Only the first frame was processed ({count} skipped)",
+        "page_failed":            "Page {page} could not be processed",
+    },
+}
+
+
+def issue_to_payload(issue, lang: str = "en") -> dict:
+    """PageIssue -> elemento de `warnings` del file_result: {page, stage, code, message}."""
+    templates = WARNINGS.get(lang, WARNINGS["en"])
+    template = templates.get(issue.code, issue.code)
+    return {
+        "page": issue.page,
+        "stage": issue.stage,
+        "code": issue.code,
+        "message": template.format(count=issue.count, page=issue.page),
+    }
 
 
 def get_error_message(exception: Exception, lang: str = "en") -> str:
@@ -39,6 +77,11 @@ def get_error_message(exception: Exception, lang: str = "en") -> str:
     msgs = MESSAGES.get(lang, MESSAGES["en"])
     exc_type = type(exception).__name__
     exc_str = str(exception)
+
+    # ConversionError trae un código estable: tiene prioridad sobre el mapeo por nombre de excepción.
+    code = getattr(exception, "code", None)
+    if code in msgs:
+        return msgs[code]
 
     if exc_type == "FileNotFoundError":
         return msgs["FileNotFoundError"]

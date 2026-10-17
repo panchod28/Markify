@@ -28,7 +28,7 @@ from dispatcher import run
 from converter import convert_document
 from whisper_handler import transcribe_audio
 from model_manager import model_exists, download_model
-from error_messages import get_error_message
+from error_messages import get_error_message, issue_to_payload
 
 
 _cancel_flag = threading.Event()
@@ -66,10 +66,16 @@ def handle_convert(payload: dict):
         })
 
         try:
+            warnings = []
             if category == "document":
                 content = convert_document(path)
             elif category == "audio":
                 content = transcribe_audio(path, file_id, _cancel_flag)
+            elif category == "image":
+                # Importación bajo demanda: no cargar OpenCV/ONNX para documentos ni audio.
+                from ocr.image_converter import convert_image
+                result = convert_image(path)
+                content, warnings = result.markdown, result.warnings
             else:
                 raise ValueError(f"Categoría desconocida: {category}")
 
@@ -77,16 +83,16 @@ def handle_convert(payload: dict):
                 write_message({"type": "conversion_cancelled", "payload": {}})
                 return
 
-            write_message({
-                "type": "file_result",
-                "payload": {
-                    "fileId": file_id,
-                    "status": "completed",
-                    "progress": 100,
-                    "markdownContent": content,
-                    "errorMessage": None
-                }
-            })
+            payload = {
+                "fileId": file_id,
+                "status": "completed",
+                "progress": 100,
+                "markdownContent": content,
+                "errorMessage": None
+            }
+            if warnings:  # campo opcional: ausente = comportamiento anterior
+                payload["warnings"] = [issue_to_payload(w, lang) for w in warnings]
+            write_message({"type": "file_result", "payload": payload})
 
         except Exception as e:
             traceback.print_exc(file=sys.stderr)

@@ -71,3 +71,6 @@ lerna-debug.log*
 # Misc
 # ===========================
 *.tsbuildinfo
+
+# Modelos OCR (se descargan en build con fetch_ocr_models.py)
+sidecar/ocr/models/

@@ -6,6 +6,7 @@ O directamente: cd sidecar && python build.py
 """
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,8 @@ from pathlib import Path
 
 # Carpeta --onedir que Tauri incluye en la app (ver tauri.macos.conf.json / tauri.windows.conf.json).
 # El ejecutable queda en <OUTPUT_DIR>/markify-sidecar[.exe] y las librerías en <OUTPUT_DIR>/_internal/.
+from fetch_ocr_models import MODELS_DIR, fetch as fetch_ocr_models
+
 SIDECAR_NAME = "markify-sidecar"
 OUTPUT_DIR = Path(__file__).parent.parent / "src-tauri" / "binaries" / SIDECAR_NAME
 
@@ -38,6 +41,7 @@ def build():
     dist_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"-> Building sidecar (onedir) en {OUTPUT_DIR}")
+    fetch_ocr_models()  # modelos OCR con SHA-256 verificado; nunca se descargan en runtime
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -65,6 +69,11 @@ def build():
         "--hidden-import", "pptx.dml.color",
         "--hidden-import", "pptx.parts.presentation",
         "--collect-data", "whisper",
+        # OCR (rapidocr + modelos propios). Sin torch: el motor PyTorch de rapidocr no se usa.
+        "--collect-all", "rapidocr",
+        "--exclude-module", "rapidocr.inference_engine.pytorch",
+        "--collect-binaries", "onnxruntime",
+        "--add-data", f"{MODELS_DIR}{os.pathsep}ocr/models",
         "--exclude-module", "matplotlib",
         "--exclude-module", "tkinter",
         "--exclude-module", "PyQt5",
@@ -81,6 +90,10 @@ def build():
     if result.returncode != 0:
         print("x Build failed")
         sys.exit(1)
+
+    # --collect-all rapidocr arrastra los modelos PP-OCRv6 del wheel (~31 MB) que no usamos.
+    for unused in (OUTPUT_DIR / "_internal" / "rapidocr" / "models").glob("*.onnx"):
+        unused.unlink()
 
     print(f"v Sidecar compilado exitosamente: {OUTPUT_DIR}")
 

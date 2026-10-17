@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 DEFAULT_DIR = Path(__file__).parent.parent / "src-tauri" / "binaries" / "markify-sidecar"
+OCR_FIXTURE = Path(__file__).parent / "tests" / "fixtures" / "ocr_hello.png"
 FIRST_RUN_TIMEOUT_S = 900  # el primer arranque puede tardar minutos (verificación del SO / antivirus)
 
 
@@ -77,6 +78,16 @@ def main() -> int:
     assert result and result["payload"]["status"] == "completed", f"conversión falló: {out}"
     assert "| a | b |" in result["payload"]["markdownContent"], result["payload"]["markdownContent"]
     assert out[-1].get("type") == "conversion_complete", out
+
+    # Imagen -> OCR: comprueba que los modelos y las librerías de OCR viajan dentro del binario.
+    out, _ = run_sidecar(exe, [{
+        "id": "smoke", "command": "convert",
+        "payload": {"lang": "en", "files": [{"id": "f2", "path": str(OCR_FIXTURE), "category": "image"}]},
+    }], 300)
+    result = next((m for m in out if m.get("type") == "file_result"), None)
+    assert result and result["payload"]["status"] == "completed", f"OCR de imagen falló: {out}"
+    ocr_text = result["payload"]["markdownContent"].lower()
+    assert "hello markify" in ocr_text and "2024" in ocr_text, ocr_text
 
     print("OK")
     return 0

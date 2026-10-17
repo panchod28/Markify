@@ -48,6 +48,7 @@ jobs:
         working-directory: sidecar
         run: |
           pip install pytest
+          python fetch_ocr_models.py
           python -m pytest tests -q
 
       - name: Build sidecar
