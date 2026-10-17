@@ -22,38 +22,62 @@ def lines_to_markdown(lines: list[OcrLine], min_confidence: float = MIN_CONFIDEN
         return "", dropped
 
     med_h = median(max(1.0, l.box[3] - l.box[1]) for l in kept)
+    columns, spanning = _split_columns(kept, med_h)
     paragraphs: list[str] = []
-    for column in _split_columns(kept, med_h):
+    if len(columns) > 1 and spanning:  # título/pie que cruza las columnas: antes o después de ellas, no en medio
+        content_top = min(l.box[1] for c in columns for l in c)
+        before = [l for l in spanning if (l.box[1] + l.box[3]) / 2 < content_top]
+        paragraphs.extend(_paragraphs(before, med_h) if before else [])
+        spanning = [l for l in spanning if l not in before]
+    for column in columns:
         paragraphs.extend(_paragraphs(column, med_h))
+    if spanning:
+        paragraphs.extend(_paragraphs(spanning, med_h))
     return "\n\n".join(paragraphs), dropped
 
 
-def _split_columns(lines: list[OcrLine], med_h: float) -> list[list[OcrLine]]:
-    """Columnas por huecos verticales libres en la proyección horizontal. Si no hay, una sola columna."""
+def _split_columns(lines: list[OcrLine], med_h: float) -> tuple[list[list[OcrLine]], list[OcrLine]]:
+    """(columnas, líneas que cruzan el hueco entre ellas). Columnas por huecos verticales libres en la
+    proyección horizontal; primero sin tolerancia y luego tolerando UNA línea puente (título o pie centrado).
+    Si no hay, una sola columna."""
     left = min(l.box[0] for l in lines)
     right = max(l.box[2] for l in lines)
     min_gap = max(1.5 * med_h, COLUMN_GAP_MIN * (right - left))
+    for tolerance in (0, 1):
+        found = _columns(lines, min_gap, tolerance)
+        if found:
+            return found
+    return [lines], []
 
-    # Fusionar los intervalos horizontales ocupados y mirar los huecos entre ellos.
-    spans = sorted((l.box[0], l.box[2]) for l in lines)
-    merged = [list(spans[0])]
-    for x0, x1 in spans[1:]:
-        if x0 - merged[-1][1] >= min_gap:
-            merged.append([x0, x1])
-        else:
-            merged[-1][1] = max(merged[-1][1], x1)
-    if len(merged) < 2:
-        return [lines]
 
-    columns: list[list[OcrLine]] = [[] for _ in merged]
+def _columns(lines: list[OcrLine], min_gap: float, tolerance: int):
+    xs = sorted({x for l in lines for x in (l.box[0], l.box[2])})
+    gaps: list[list[float]] = []
+    for x0, x1 in zip(xs, xs[1:]):
+        covered = sum(1 for l in lines if l.box[0] < x1 and l.box[2] > x0)
+        if covered <= tolerance:
+            if gaps and gaps[-1][1] == x0:
+                gaps[-1][1] = x1
+            else:
+                gaps.append([x0, x1])
+    # Un hueco cuenta si mide lo suficiente y hay texto a ambos lados (no es el margen).
+    gaps = [g for g in gaps if g[1] - g[0] >= min_gap
+            and any(l.box[2] <= g[0] for l in lines) and any(l.box[0] >= g[1] for l in lines)]
+    if not gaps:
+        return None
+    columns: list[list[OcrLine]] = [[] for _ in range(len(gaps) + 1)]
+    spanning: list[OcrLine] = []
     for l in lines:
-        cx = (l.box[0] + l.box[2]) / 2
-        idx = min(range(len(merged)), key=lambda i: 0 if merged[i][0] <= cx <= merged[i][1] else min(abs(cx - merged[i][0]), abs(cx - merged[i][1])))
-        columns[idx].append(l)
+        if any(l.box[0] <= g[0] and l.box[2] >= g[1] or g[0] <= (l.box[0] + l.box[2]) / 2 <= g[1] for g in gaps):
+            # cruza el hueco o está centrada en él (título, pie); si solo lo invade desde un lado, va por su centro
+            spanning.append(l)
+        else:
+            cx = (l.box[0] + l.box[2]) / 2
+            columns[sum(1 for g in gaps if cx > g[1])].append(l)
     # Una "columna" con una sola línea suele ser ruido (p. ej. un número de página): no partir el texto.
     if any(len(c) < 2 for c in columns):
-        return [lines]
-    return columns
+        return None
+    return columns, spanning
 
 
 def _paragraphs(lines: list[OcrLine], med_h: float) -> list[str]:
