@@ -64,3 +64,26 @@ describe('useConversionStore._handleFileUpdate', () => {
     expect(b.warnings).toBeUndefined();
   });
 });
+
+
+describe('useConversionStore.addFiles validation of legacy Office formats', () => {
+  beforeEach(() => useConversionStore.getState().resetToEmpty());
+
+  const make = (name: string) => new File(['x'], name);
+
+  it('rejects .doc and .ppt with their own error and keeps the rest of the batch', () => {
+    useConversionStore.getState().addFiles([make('informe.doc'), make('informe.docx'), make('charla.ppt'), make('datos.xyz')]);
+    const s = useConversionStore.getState();
+    expect(s.files.map(f => f.originalName)).toEqual(['informe.docx']);
+    expect(s.validationErrors).toEqual([
+      { type: 'legacy_format', filename: 'informe.doc', ext: 'doc' },
+      { type: 'legacy_format', filename: 'charla.ppt', ext: 'ppt' },
+      { type: 'unsupported', filename: 'datos.xyz', ext: 'xyz' },
+    ]);
+  });
+
+  it('still accepts .xls', () => {
+    useConversionStore.getState().addFiles([make('hoja.xls')]);
+    expect(useConversionStore.getState().files.map(f => f.extension)).toEqual(['xls']);
+  });
+});

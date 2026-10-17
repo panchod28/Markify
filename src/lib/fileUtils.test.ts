@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getExtension, getFileCategory, isSupportedExtension } from './fileUtils';
+import { getExtension, getFileCategory, isLegacyExtension, isSupportedExtension } from './fileUtils';
 
 describe('getFileCategory', () => {
   it('keeps the existing categories', () => {
@@ -12,6 +12,19 @@ describe('getFileCategory', () => {
       expect(getFileCategory(ext)).toBe('image');
       expect(isSupportedExtension(ext)).toBe(true);
     }
+  });
+
+  it('keeps accepting the modern Office formats and old Excel', () => {
+    for (const ext of ['docx', 'pptx', 'xlsx', 'xls']) expect(isSupportedExtension(ext)).toBe(true);
+  });
+
+  it('treats .doc and .ppt as legacy, not as supported', () => {
+    for (const ext of ['doc', 'ppt']) {
+      expect(isLegacyExtension(ext)).toBe(true);
+      expect(isSupportedExtension(ext)).toBe(false);
+      expect(getFileCategory(ext)).toBeNull();
+    }
+    for (const ext of ['docx', 'pptx', 'xls', 'xyz']) expect(isLegacyExtension(ext)).toBe(false);
   });
 
   it('rejects unsupported extensions', () => {

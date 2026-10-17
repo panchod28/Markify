@@ -6,8 +6,13 @@ Conversión de documentos a Markdown usando markitdown.
 from pathlib import Path
 from markitdown import MarkItDown
 
+from ocr.diagnostics import ConversionError
+
 
 _md_converter = MarkItDown()
+
+# Binarios antiguos de Office: markitdown no los soporta (el frontend ya los rechaza antes de llegar aquí).
+LEGACY_SUFFIXES = (".doc", ".ppt")
 
 
 def convert_document(file_path: str) -> str:
@@ -30,6 +35,9 @@ def convert_document(file_path: str) -> str:
 
     if not path.exists():
         raise FileNotFoundError(f"Archivo no encontrado: {file_path}")
+
+    if path.suffix.lower() in LEGACY_SUFFIXES:
+        raise ConversionError("legacy_format", "open", path.name)
 
     if path.stat().st_size == 0:
         raise ValueError("El archivo está vacío")

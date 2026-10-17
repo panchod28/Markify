@@ -104,7 +104,7 @@ def documents(d: Path):
     (d / "_tmp.html").write_text("<html><body><h1>Documento Word antiguo</h1><p>Contenido del .doc con ñ.</p></body></html>", encoding="utf-8")
     try:
         run("textutil", "-convert", "doc", str(d / "_tmp.html"), "-output", str(d / "documento antiguo.doc"))
-        expect("documento antiguo.doc", "documento word antiguo")
+        # .doc ya no se convierte: la app lo rechaza con "Formato antiguo…" (no entra en expected.json)
     except Exception as e:
         print("aviso: no se pudo generar .doc:", e)
     (d / "_tmp.html").unlink()

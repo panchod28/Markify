@@ -94,6 +94,7 @@
     "tooManyFiles": "Máximo {{count}} archivos por lote",
     "duplicate": "{{filename}} ya está en la lista",
     "unsupportedFormat": "Formato no soportado: .{{ext}}",
+    "legacyFormat": "Formato antiguo .{{ext}} no soportado: guarda el archivo como .{{modern}} e inténtalo de nuevo",
     "moreErrors": "y {{count}} más..."
   }
 }

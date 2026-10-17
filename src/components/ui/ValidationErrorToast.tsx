@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { LEGACY_REPLACEMENT } from '@/types';
+import type { LegacyExtension } from '@/types';
 import type { FileValidationError } from '@/stores/useConversionStore';
 
 interface ValidationErrorToastProps {
@@ -31,6 +33,8 @@ export function ValidationErrorToast({ errors, onDismiss }: ValidationErrorToast
     switch (error.type) {
       case 'unsupported':
         return t('errors.unsupportedFormat', { ext: error.ext });
+      case 'legacy_format':
+        return t('errors.legacyFormat', { ext: error.ext, modern: LEGACY_REPLACEMENT[error.ext as LegacyExtension] });
       case 'too_large':
         return t('errors.fileTooBig', { filename: error.filename });
       case 'batch_too_large':

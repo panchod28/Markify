@@ -103,8 +103,16 @@ export interface SaveZipPayload {
 
 // ─── Constantes de extensiones soportadas ─────────────────────────────────
 export const DOCUMENT_EXTENSIONS = [
-  'pdf', 'pptx', 'ppt', 'xlsx', 'xls', 'docx', 'doc', 'html', 'csv'
+  'pdf', 'pptx', 'xlsx', 'xls', 'docx', 'html', 'csv'
 ] as const;
+
+// Formatos binarios antiguos de Office: markitdown no los soporta. Se rechazan con un mensaje que indica
+// con qué formato volver a guardarlos (ver change add-ocr-office-images, D8).
+export const LEGACY_EXTENSIONS = ['doc', 'ppt'] as const;
+
+export type LegacyExtension = typeof LEGACY_EXTENSIONS[number];
+
+export const LEGACY_REPLACEMENT: Record<LegacyExtension, string> = { doc: 'docx', ppt: 'pptx' };
 
 export type DocumentExtension = typeof DOCUMENT_EXTENSIONS[number];
 
@@ -149,11 +157,9 @@ export const FILE_ICON_MAP: Record<SupportedExtension, {
   // Documentos
   pdf:  { icon: 'FileText',     colorClass: 'text-red-500'    },
   docx: { icon: 'FileText',     colorClass: 'text-blue-500'   },
-  doc:  { icon: 'FileText',     colorClass: 'text-blue-500'   },
   xlsx: { icon: 'Sheet',        colorClass: 'text-green-500'  },
   xls:  { icon: 'Sheet',        colorClass: 'text-green-500'  },
   pptx: { icon: 'Presentation', colorClass: 'text-orange-500' },
-  ppt:  { icon: 'Presentation', colorClass: 'text-orange-500' },
   html: { icon: 'FileCode',     colorClass: 'text-gray-500'   },
   csv:  { icon: 'FileCode',     colorClass: 'text-gray-500'   },
   // Audio

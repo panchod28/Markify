@@ -94,6 +94,7 @@
     "tooManyFiles": "Maximum {{count}} files per batch",
     "duplicate": "{{filename}} is already in the list",
     "unsupportedFormat": "Unsupported format: .{{ext}}",
+    "legacyFormat": "Old .{{ext}} format is not supported: save the file as .{{modern}} and try again",
     "moreErrors": "and {{count}} more..."
   }
 }

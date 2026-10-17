@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { stat } from '@tauri-apps/plugin-fs';
 import { sanitizeFilename } from '@/lib/sanitizer';
 import { formatFileSize } from '@/lib/formatters';
-import { getExtension, getFileCategory, isSupportedExtension } from '@/lib/fileUtils';
+import { getExtension, getFileCategory, isLegacyExtension, isSupportedExtension } from '@/lib/fileUtils';
 import { tauriCommands } from '@/lib/tauri';
 import type {
   AppState,
@@ -15,6 +15,7 @@ import { MAX_FILE_SIZE_BYTES, MAX_TOTAL_BATCH_SIZE_BYTES, MAX_FILES_PER_BATCH } 
 
 export type FileValidationError =
   | { type: 'unsupported'; filename: string; ext: string }
+  | { type: 'legacy_format'; filename: string; ext: string }
   | { type: 'too_large'; filename: string; sizeBytes: number }
   | { type: 'batch_too_large' }
   | { type: 'too_many_files'; current: number; attempted: number }
@@ -92,6 +93,11 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
     for (const rawFile of rawFiles) {
       const ext = getExtension(rawFile.name);
 
+      if (isLegacyExtension(ext)) {
+        errors.push({ type: 'legacy_format', filename: rawFile.name, ext });
+        continue;
+      }
+
       if (!isSupportedExtension(ext)) {
         errors.push({ type: 'unsupported', filename: rawFile.name, ext });
         continue;
@@ -163,6 +169,11 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
       const separator = filePath.includes('\\') ? '\\' : '/';
       const originalName = filePath.split(separator).pop()!;
       const ext = getExtension(originalName);
+
+      if (isLegacyExtension(ext)) {
+        errors.push({ type: 'legacy_format', filename: originalName, ext });
+        continue;
+      }
 
       if (!isSupportedExtension(ext)) {
         errors.push({ type: 'unsupported', filename: originalName, ext });
