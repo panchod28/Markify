@@ -272,7 +272,7 @@ export default defineConfig(async () => ({
 - OCR: `build.py` llama a `fetch_ocr_models.py` (modelos con SHA-256 fijado; un hash distinto rompe el build) y añade `--add-data <sidecar/ocr/models>:ocr/models`, `--collect-all rapidocr` (con `--exclude-module rapidocr.inference_engine.pytorch`), `--collect-binaries onnxruntime`; después borra los modelos PP-OCRv6 que arrastra el wheel de rapidocr y no se usan. Las importaciones de OCR son perezosas, así que el arranque en frío no cambia.
 - Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV, de una imagen y de un PDF escaneado por OCR, y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
 - Tests: `python -m pytest tests -q` (incluye los tests con OCR real, marcados `ocr`). CI instala `pytest` y `reportlab` (genera los PDFs de prueba) y ejecuta `fetch_ocr_models.py` antes. Medidas locales (Apple Silicon): `python tests/stress_pdf_memory.py 200` → RSS pico ≈ 1.1 GB y plano, ≈ 0.3 s/página.
-- Licencias: `THIRD_PARTY_NOTICES.md` (raíz) se incluye en el instalador (`Resources/` en macOS vía `tauri.macos.conf.json`, junto al sidecar en Windows vía `tauri.windows.conf.json`). Actualizarlo al añadir o cambiar dependencias de OCR.
+- Licencias: `THIRD_PARTY_NOTICES.md` y `THIRD_PARTY_LICENSES.txt` (textos completos, generado con `python sidecar/gen_licenses.py`) se incluyen en el instalador (`Resources/` en macOS vía `tauri.macos.conf.json`, junto al sidecar en Windows vía `tauri.windows.conf.json`). Actualizarlo al añadir o cambiar dependencias de OCR.
 
 ---
 

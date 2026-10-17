@@ -38,12 +38,12 @@ def lines_to_markdown(lines: list[OcrLine], min_confidence: float = MIN_CONFIDEN
 
 def _split_columns(lines: list[OcrLine], med_h: float) -> tuple[list[list[OcrLine]], list[OcrLine]]:
     """(columnas, líneas que cruzan el hueco entre ellas). Columnas por huecos verticales libres en la
-    proyección horizontal; primero sin tolerancia y luego tolerando UNA línea puente (título o pie centrado).
+    proyección horizontal; primero sin tolerancia y luego tolerando unas pocas líneas puente (título, encabezado o pie centrado).
     Si no hay, una sola columna."""
     left = min(l.box[0] for l in lines)
     right = max(l.box[2] for l in lines)
-    min_gap = max(1.5 * med_h, COLUMN_GAP_MIN * (right - left))
-    for tolerance in (0, 1):
+    min_gap = max(1.0 * med_h, COLUMN_GAP_MIN * (right - left))  # las cajas del detector vienen infladas ~1.6x: un medianil de 24 pt llega como ~40 px
+    for tolerance in (0, 2, max(3, len(lines) // 20)):  # hasta ~5 % de líneas puente (título, pie, encabezado)
         found = _columns(lines, min_gap, tolerance)
         if found:
             return found

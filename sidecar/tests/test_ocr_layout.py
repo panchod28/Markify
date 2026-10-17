@@ -56,3 +56,24 @@ def test_boxes_in_the_same_row_are_joined_left_to_right():
 
 def test_whitespace_is_trimmed():
     assert lines_to_markdown([line("  hola  ", 0, 0)])[0] == "hola"
+
+
+def test_dense_justified_columns_with_title_and_footer_read_column_by_column():
+    # Medidas de una página real: cajas del detector de 33 px de alto, medianil de ~40 px y varias líneas
+    # (título, encabezado, pie) que cruzan o tocan el hueco.
+    lines = [line("TITULO", 270, 50, 950, h=33), line("encabezado", 100, 100, 1130, h=33)]
+    for i in range(14):
+        y = 160 + i * 40
+        lines.append(line(f"izq {i}", 104, y, 590 + (10 if i % 5 == 0 else 0), h=33))
+        lines.append(line(f"der {i}", 647 - (7 if i % 6 == 0 else 0), y, 1130, h=33))
+    lines.append(line("Pagina 1", 560, 1650, 670, h=33))
+    text, _ = lines_to_markdown(lines)
+    order = ["TITULO", "encabezado", "izq 0", "izq 13", "der 0", "der 13", "Pagina 1"]
+    assert [text.index(t) for t in order] == sorted(text.index(t) for t in order), text
+    assert text.index("izq 7") < text.index("izq 8") < text.index("der 0")
+
+
+def test_single_column_with_a_ragged_right_edge_is_not_split():
+    lines = [line(f"línea {i} " + "x" * (i * 7 % 40), 100, 100 + i * 40, h=33) for i in range(20)]
+    text, _ = lines_to_markdown(lines)
+    assert [text.index(f"línea {i} ") for i in range(20)] == sorted(text.index(f"línea {i} ") for i in range(20))

@@ -3,7 +3,8 @@
   "bundle": {
     "resources": {
       "binaries/markify-sidecar/": "sidecar/",
-      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "../THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
     }
   }
 }
