@@ -366,6 +366,8 @@ Found while adding OCR; not fixed there on purpose:
 
 ### Manual release (current process)
 
+Branches: day-to-day work goes to `develop`; when a version is ready, merge `develop` into `main` and create the GitHub release **targeting `main`** (tag `vX.Y.Z-beta`, marked as pre-release while it is beta).
+
 Run these on the machine you are building for (macOS Apple Silicon today; Windows when its installer is built):
 
 ```bash
