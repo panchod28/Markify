@@ -36,6 +36,9 @@ class RapidOcrEngine:
                 "Rec.lang_type": LangRec.LATIN,
                 # El clasificador de línea desordena páginas rectas (ver spike): la orientación es de página.
                 "Global.use_cls": False,
+                # La detección trabaja con el lado mayor <= 1280 px. Por defecto (`min` 736) una página A4 a 150 DPI
+                # entra entera y el pico de RAM sube a ~1.9 GB; con 1280 baja a ~1.0 GB sin perder CER (texto de 7–10 pt).
+                "Det.limit_type": "max", "Det.limit_side_len": 1280,
                 # Devolver todas las líneas: el filtrado por confianza (y su aviso) lo hace layout.py.
                 "Global.text_score": 0.0,
                 "Global.log_level": "warning",
