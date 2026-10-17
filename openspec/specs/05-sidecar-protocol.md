@@ -57,9 +57,10 @@
 }
 ```
 
-- Puede llegar en cualquier momento durante una conversión activa.
-- El sidecar debe verificar el flag de cancelación antes de procesar cada archivo.
-- Al detectar cancelación, emitir `conversion_cancelled` y dejar de procesar.
+- Puede llegar en cualquier momento durante una conversión activa: un hilo lector de stdin lo atiende **al instante** (activa el flag) aunque el trabajador esté ocupado.
+- El trabajo en curso debe consultar el flag: antes de cada archivo y, en audio, tras cada ventana de ~30 s de Whisper (ver `whisper_progress.py`). La latencia de cancelación de un audio es la de una ventana (medido: ~8 s en CPU Apple Silicon con el modelo `base`).
+- Al detectar cancelación, emitir `conversion_cancelled` y dejar de procesar; no se emite `file_result` completado para el archivo interrumpido.
+- El flag se limpia cuando se **encola** cada `convert` (no al ejecutarlo): un `cancel` posterior se conserva aunque el trabajo aún no haya empezado, y un `cancel` sin conversión activa no afecta al siguiente `convert`.
 
 ### 2.3 Verificar modelo Whisper
 
@@ -172,8 +173,10 @@ Emitir cuando se detecta el flag de cancelación y se para el procesamiento.
 ### 3.10 Estado del modelo (respuesta a check_model)
 
 ```json
-{"type": "model_status", "payload": {"available": true}}
+{"type": "model_status", "request_id": "<id del comando check_model>", "payload": {"available": true}}
 ```
+
+`request_id` es el `id` recibido en `check_model` (`null` si no venía). **Rust solo resuelve `check_whisper_model` si el mensaje lo trae**; sin él la comprobación expira. Se responde al instante, también durante una conversión.
 
 ---
 
@@ -203,13 +206,12 @@ Entry point del sidecar de Markify.
 Lee comandos de stdin (JSON newline-delimited) y procesa según el tipo.
 """
 
-import sys
-import json
 import threading
-from protocol import read_message, write_message
+from protocol import write_message
+from dispatcher import run
 from converter import convert_document
 from whisper_handler import transcribe_audio
-from model_manager import model_exists, download_model, get_model_path
+from model_manager import model_exists, download_model
 from error_messages import get_error_message
 
 
@@ -218,36 +220,22 @@ _cancel_flag = threading.Event()
 
 
 def main():
-    """Loop principal: leer stdin y despachar comandos."""
-    while True:
-        try:
-            msg = read_message()
-        except EOFError:
-            # Tauri cerró el pipe — salir limpiamente
-            break
-        except json.JSONDecodeError as e:
-            print(f"[Sidecar] JSON inválido recibido: {e}", file=sys.stderr)
-            continue
+    """Conecta los handlers al despachador (lector de stdin + trabajador)."""
+    run(
+        handlers={
+            "convert": handle_convert,
+            "download_model": lambda _payload: handle_download_model(),
+        },
+        cancel_flag=_cancel_flag,
+        model_available=model_exists,
+    )
 
-        command = msg.get("command")
-
-        if command == "convert":
-            _cancel_flag.clear()
-            handle_convert(msg["payload"])
-
-        elif command == "cancel":
-            _cancel_flag.set()
-            # El mensaje cancelled lo emite handle_convert al detectar el flag
-
-        elif command == "check_model":
-            available = model_exists()
-            write_message({"type": "model_status", "payload": {"available": available}})
-
-        elif command == "download_model":
-            handle_download_model()
-
-        else:
-            print(f"[Sidecar] Comando desconocido: {command}", file=sys.stderr)
+# dispatcher.py (sin imports pesados, testeable con handlers falsos):
+#  - hilo lector: `cancel` -> _cancel_flag.set(); `check_model` -> model_status con request_id;
+#    `convert` -> _cancel_flag.clear() y encolar; `download_model` -> encolar; EOF -> centinela.
+#  - trabajador (hilo principal): ejecuta los trabajos encolados en orden.
+#  - cada comando se despacha dentro de try/except: un error se registra en stderr y el lector sigue.
+# protocol.write_message usa un Lock: lector y trabajador pueden escribir a la vez sin mezclar líneas.
 
 
 def handle_convert(payload: dict):
@@ -499,15 +487,25 @@ def transcribe_audio(
     if cancel_flag.is_set():
         return ""
 
-    # Transcribir con verbose=False para evitar output a stdout
-    # que rompería el protocolo JSON
+    def report(pct: int):
+        write_message({
+            "type": "file_progress",
+            "payload": {"fileId": file_id, "status": "processing", "progress": pct}
+        })
+
+    # verbose=None: con False Whisper imprime "Detected language: ..." en stdout y rompería
+    # el protocolo JSON. El progreso real (0-99) y la cancelación llegan por hook_progress, que
+    # sustituye el tqdm de whisper.transcribe mientras dura la llamada (ver whisper_progress.py).
     try:
-        result = model.transcribe(
-            file_path,
-            verbose=False,
-            language=None,  # Detección automática del idioma del audio
-            fp16=False,     # Usar FP32 para compatibilidad CPU
-        )
+        with hook_progress(_transcribe_module(), cancel_flag, report):
+            result = model.transcribe(
+                file_path,
+                verbose=None,
+                language=None,  # Detección automática del idioma del audio
+                fp16=False,     # Usar FP32 para compatibilidad CPU
+            )
+    except TranscriptionCancelled:
+        return ""
     except Exception as e:
         error_str = str(e).lower()
         if "no speech" in error_str or "too short" in error_str:
@@ -518,12 +516,6 @@ def transcribe_audio(
     text = result.get("text", "").strip()
     if not text:
         raise ValueError("audio_too_short")
-
-    # Emitir progreso al 50% (no hay progreso real de Whisper disponible fácilmente)
-    write_message({
-        "type": "file_progress",
-        "payload": {"fileId": file_id, "status": "processing", "progress": 50}
-    })
 
     # Verificar cancelación después de transcribir
     if cancel_flag.is_set():

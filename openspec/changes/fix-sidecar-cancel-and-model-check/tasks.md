@@ -34,11 +34,11 @@
 
 ## 5. CI
 
-- [ ] 5.1 El job de tests del sidecar ejecuta `pytest` (dispatcher, protocolo, shim) en macOS y Windows
-- [ ] 5.2 Confirmar que el smoke test de `sidecar-onedir` sigue pasando con el nuevo bucle
+- [x] 5.1 `release.yml`: `pytest` (dispatcher, protocolo, shim) en el job del sidecar y `type-check` + `vitest` en el job de la app, ambos en macOS y Windows, antes de compilar. **No ejecutado aún en los runners**
+- [x] 5.2 El smoke test de `sidecar-onedir` pasa con el nuevo bucle (ahora también exige `request_id`): arranque posterior 2.0 s
 
 ## 6. Docs y cierre
 
-- [ ] 6.1 Actualizar spec `05-sidecar-protocol` (hilos, `request_id`, semántica del flag, progreso de audio) y `03-stores` (`resetToEmpty`)
-- [ ] 6.2 Nota en CONTRIBUTING: el hook de Whisper depende de `whisper.transcribe.tqdm` y qué hacer al actualizar
-- [ ] 6.3 `openspec validate fix-sidecar-cancel-and-model-check --strict` y archivar
+- [x] 6.1 Actualizar spec `05-sidecar-protocol` (hilos, `request_id`, semántica del flag, progreso de audio) y `03-stores` (`resetToEmpty`)
+- [x] 6.2 Nota en CONTRIBUTING: el hook de Whisper depende de `whisper.transcribe.tqdm` y qué hacer al actualizar
+- [ ] 6.3 `openspec validate fix-sidecar-cancel-and-model-check --strict` (hecho: válido) y archivar al cerrar 4.3–4.5 (lote mixto cancelado, cierre durante transcripción y Windows)

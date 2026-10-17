@@ -146,6 +146,10 @@ cd ..
 >
 > The first launch of a freshly built sidecar can take 30–50 s on macOS (one-time OS verification of the new files); later launches take about 2 s. You can check a build with `python smoke_test.py` from `sidecar/`.
 
+### Whisper progress/cancel hook
+
+`sidecar/whisper_progress.py` replaces `whisper.transcribe`'s internal `tqdm` while a transcription runs, so cancelling works between Whisper's ~30 s windows and progress is real. It depends on that internal detail, so `openai-whisper` is pinned in `sidecar/requirements.txt`. When you bump the version, run `python -m pytest tests` in `sidecar/`: `test_installed_whisper_exposes_the_hook_point` fails if the hook point moved (the sidecar itself falls back to the old behaviour with a warning on stderr instead of crashing).
+
 ### Run in Development
 
 ```bash

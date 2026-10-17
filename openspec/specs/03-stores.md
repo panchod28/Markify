@@ -203,7 +203,7 @@ interface ConversionStore {
 
   // ── Reset ─────────────────────────────────────────────────────────────────
   resetToEmpty: () => void;
-  // Vuelve al estado inicial limpio. Llamar al pulsar "Nueva conversión".
+  // Vuelve al estado inicial limpio (conserva el estado del modelo Whisper). Llamar al pulsar "Nueva conversión".
 }
 
 // ─── Estado inicial ───────────────────────────────────────────────────────
@@ -480,7 +480,17 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
   // ── resetToEmpty ──────────────────────────────────────────────────────────
 
   resetToEmpty: () => {
-    set(INITIAL_CONVERSION_STATE);
+    // El modelo Whisper es del equipo, no de la conversión: conservar su estado
+    // (si no, "Nueva conversión" volvería a pedir la descarga).
+    const {
+      whisperModelAvailable, whisperModelDownloading, whisperModelDownloadProgress,
+      whisperModelDownloadedMB, whisperModelTotalMB,
+    } = get();
+    set({
+      ...INITIAL_CONVERSION_STATE,
+      whisperModelAvailable, whisperModelDownloading, whisperModelDownloadProgress,
+      whisperModelDownloadedMB, whisperModelTotalMB,
+    });
   },
 }));
 ```

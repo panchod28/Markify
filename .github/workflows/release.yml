@@ -43,6 +43,13 @@ jobs:
           pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
           pip install -r requirements.txt
 
+      # Tests del sidecar (despachador, protocolo, hook de Whisper) antes de compilar.
+      - name: Test sidecar
+        working-directory: sidecar
+        run: |
+          pip install pytest
+          python -m pytest tests -q
+
       - name: Build sidecar
         working-directory: sidecar
         run: python build.py
@@ -113,6 +120,11 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+
+      - name: Frontend checks
+        run: |
+          npm run type-check
+          npm test
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
