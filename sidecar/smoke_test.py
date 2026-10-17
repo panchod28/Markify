@@ -89,6 +89,24 @@ def main() -> int:
     ocr_text = result["payload"]["markdownContent"].lower()
     assert "hello markify" in ocr_text and "2024" in ocr_text, ocr_text
 
+    # PDF escaneado -> render + OCR por página, con progreso por página (misma imagen, dos páginas).
+    with tempfile.TemporaryDirectory() as tmp:
+        from PIL import Image
+
+        scan = Path(tmp) / "scan.pdf"
+        img = Image.open(OCR_FIXTURE).convert("RGB")
+        img.save(scan, format="PDF", save_all=True, append_images=[img])
+        out, _ = run_sidecar(exe, [{
+            "id": "smoke", "command": "convert",
+            "payload": {"lang": "en", "files": [{"id": "f3", "path": str(scan), "category": "document"}]},
+        }], 300)
+    result = next((m for m in out if m.get("type") == "file_result"), None)
+    assert result and result["payload"]["status"] == "completed", f"OCR de PDF escaneado falló: {out}"
+    pdf_text = result["payload"]["markdownContent"].lower()
+    assert pdf_text.count("hello markify") == 2 and "2024" in pdf_text, pdf_text
+    progress = [m["payload"]["progress"] for m in out if m.get("type") == "file_progress"]
+    assert 50 in progress, f"sin progreso por página: {progress}"
+
     print("OK")
     return 0
 

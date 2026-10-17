@@ -50,7 +50,7 @@ Un fallo de render u OCR en una página SHALL NOT abortar el archivo. La página
 
 #### Scenario: Página corrupta
 - **WHEN** la página 7 de 20 lanza una excepción al renderizar
-- **THEN** el `.md` contiene las otras 19 páginas, el marcador de la 7 y un warning `{page: 7, stage: "render", code: "page_render_failed"}`
+- **THEN** el `.md` contiene las otras 19 páginas, el marcador de la 7 con el código de causa `(page_render_failed)` y un warning `{page: 7, stage: "render", code: "page_failed"}`
 
 #### Scenario: Todas las páginas fallan
 - **WHEN** ninguna página produce texto y al menos una falló
