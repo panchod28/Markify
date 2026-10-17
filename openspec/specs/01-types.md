@@ -193,10 +193,16 @@ export interface SaveZipPayload {
 ```typescript
 // ─── Extensiones de documentos (procesados por markitdown) ───────────────
 export const DOCUMENT_EXTENSIONS = [
-  'pdf', 'pptx', 'ppt', 'xlsx', 'xls', 'docx', 'doc', 'html', 'csv'
+  'pdf', 'pptx', 'xlsx', 'xls', 'docx', 'html', 'csv'
 ] as const;
 
 export type DocumentExtension = typeof DOCUMENT_EXTENSIONS[number];
+
+// Binarios antiguos de Office: markitdown no los soporta. No forman parte de SUPPORTED_EXTENSIONS; se rechazan en la
+// validación con el error `legacy_format` y un mensaje que indica con qué formato volver a guardarlos.
+export const LEGACY_EXTENSIONS = ['doc', 'ppt'] as const;
+export type LegacyExtension = typeof LEGACY_EXTENSIONS[number];
+export const LEGACY_REPLACEMENT: Record<LegacyExtension, string> = { doc: 'docx', ppt: 'pptx' };
 
 // ─── Extensiones de audio/video (procesados por Whisper) ─────────────────
 export const AUDIO_EXTENSIONS = [
@@ -257,11 +263,9 @@ export const FILE_ICON_MAP: Record<SupportedExtension, {
   // Documentos
   pdf:  { icon: 'FileText',     colorClass: 'text-red-500'    },
   docx: { icon: 'FileText',     colorClass: 'text-blue-500'   },
-  doc:  { icon: 'FileText',     colorClass: 'text-blue-500'   },
   xlsx: { icon: 'Sheet',        colorClass: 'text-green-500'  },
   xls:  { icon: 'Sheet',        colorClass: 'text-green-500'  },
   pptx: { icon: 'Presentation', colorClass: 'text-orange-500' },
-  ppt:  { icon: 'Presentation', colorClass: 'text-orange-500' },
   html: { icon: 'FileCode',     colorClass: 'text-gray-500'   },
   csv:  { icon: 'FileCode',     colorClass: 'text-gray-500'   },
   // Audio
@@ -298,6 +302,7 @@ export function isSupportedExtension(ext: string): ext is SupportedExtension {
 
 // Determina la categoría de un archivo por su extensión.
 // Retorna null si la extensión no está soportada.
+// `isLegacyExtension(ext)`: true para 'doc' y 'ppt' (se comprueba antes que isSupportedExtension).
 export function getFileCategory(ext: string): FileCategory | null {
   if ((DOCUMENT_EXTENSIONS as readonly string[]).includes(ext)) return 'document';
   if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) return 'audio';

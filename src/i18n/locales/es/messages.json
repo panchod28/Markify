@@ -10,6 +10,7 @@
     "image_too_large": "La imagen es demasiado grande para procesarla",
     "ocr_engine_unavailable": "El motor de reconocimiento de texto no está disponible",
     "ocr_failed": "No se pudo reconocer el texto de la imagen",
+    "legacy_format": "Formato antiguo (.doc / .ppt) no soportado: guárdalo como .docx / .pptx e inténtalo de nuevo",
     "pdf_open_failed": "No se pudo abrir el PDF (puede estar dañado)",
     "page_render_failed": "No se pudo procesar el documento (error al leer sus páginas)",
     "page_failed": "No se pudo procesar el documento"

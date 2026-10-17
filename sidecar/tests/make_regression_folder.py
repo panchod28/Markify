@@ -89,6 +89,18 @@ def documents(d: Path):
     p.save(d / "presentacion.pptx")
     expect("presentacion.pptx", "presentación de prueba")
 
+    # --- DOCX y PPTX con una imagen con texto (OCR de imágenes incrustadas)
+    from make_office_fixtures import build_docx, img, make_pptx_corpus, png_bytes
+
+    shot = png_bytes(text_page(ES_LINES, size=44, px=(900, 420)))
+    build_docx(d / "documento con imagen.docx", [("p", "Informe con una captura."), img(shot, 600, 280, "Captura del sistema"), ("p", "Fin del informe.")])
+    expect("documento con imagen.docx", "conversión")
+    import shutil
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy(make_pptx_corpus(Path(tmp))["con_figura"], d / "presentacion con imagen.pptx")
+    expect("presentacion con imagen.pptx", "conversión")
+
     # --- formatos antiguos
     try:
         import xlwt

@@ -107,6 +107,37 @@ def main() -> int:
     progress = [m["payload"]["progress"] for m in out if m.get("type") == "file_progress"]
     assert 50 in progress, f"sin progreso por página: {progress}"
 
+    # DOCX y PPTX con una imagen con texto: OCR de las imágenes incrustadas (change add-ocr-office-images).
+    with tempfile.TemporaryDirectory() as tmp:
+        import io
+
+        from pptx import Presentation
+        from pptx.util import Inches
+
+        sys.path.insert(0, str(Path(__file__).parent / "tests"))
+        from make_office_fixtures import build_docx, img
+
+        data = OCR_FIXTURE.read_bytes()
+        docx = build_docx(Path(tmp) / "imagen.docx", [("p", "Texto del documento."), img(data, 600, 300)])
+        deck = Presentation()
+        slide = deck.slides.add_slide(deck.slide_layouts[5])
+        slide.shapes.title.text = "Presentacion"
+        slide.shapes.add_picture(io.BytesIO(data), Inches(1), Inches(2), width=Inches(6))
+        pptx = Path(tmp) / "imagen.pptx"
+        deck.save(pptx)
+        out, _ = run_sidecar(exe, [{
+            "id": "smoke", "command": "convert",
+            "payload": {"lang": "en", "files": [{"id": "f4", "path": str(docx), "category": "document"},
+                                                {"id": "f5", "path": str(pptx), "category": "document"}]},
+        }], 300)
+    results = {m["payload"]["fileId"]: m["payload"] for m in out if m.get("type") == "file_result"}
+    for file_id, kind in (("f4", "DOCX"), ("f5", "PPTX")):
+        r = results.get(file_id)
+        assert r and r["status"] == "completed", f"OCR de {kind} con imagen falló: {out}"
+        text = r["markdownContent"].lower()
+        assert "hello markify" in text and "2024" in text, f"{kind}: {text!r}"
+        assert "![" not in text, f"{kind} conserva referencias de imagen: {text!r}"
+
     print("OK")
     return 0
 

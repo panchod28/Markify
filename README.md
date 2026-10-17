@@ -28,10 +28,12 @@ A cross-platform desktop app that converts documents (PDF, DOCX, PPTX, XLSX, CSV
 
 | Category | Formats | Engine |
 |----------|---------|--------|
-| **Documents** | PDF, DOCX, PPTX, XLSX, CSV, EPUB, HTML | markitdown (+ OCR for scanned PDF pages) |
+| **Documents** | PDF, DOCX, PPTX, XLSX, XLS, CSV, HTML | markitdown (+ local OCR for scanned PDF pages and for images inside PDF, DOCX and PPTX) |
 | **Images** | PNG, JPG, JPEG, WEBP, BMP, TIF, TIFF | Local OCR (RapidOCR, PP-OCRv5) |
-| **Audio** | MP3, WAV, M4A, OGG, FLAC, WMA, AAC | Whisper (base) |
-| **Video** | MP4, MOV, AVI, MKV, WebM, WMV, FLV | Whisper (base) |
+| **Audio** | MP3, WAV, M4A, OGG, FLAC, AAC, WebM | Whisper (base) |
+| **Video** | MP4 | Whisper (base) |
+
+Old binary Office files (`.doc`, `.ppt`) are not supported: Markify tells you to save them as `.docx` / `.pptx`.
 
 ### Key Capabilities
 
@@ -42,6 +44,7 @@ A cross-platform desktop app that converts documents (PDF, DOCX, PPTX, XLSX, CSV
 - Automatic filename sanitization for cross-OS compatibility
 - Local OCR for images and scanned PDFs (Spanish and English), 100 % offline — the models ship inside the installer
 - PDFs are analysed page by page: text pages are extracted as before, scanned pages (and figures with text) are recognized, rotated pages are straightened, and two-column layouts are read column by column
+- Images inside DOCX and PPTX files are read too (screenshots, scanned pages pasted into Word, diagrams): their text appears where the image was, and a real alt text is kept as an italic line. Logos, icons and repeated images are skipped
 - A page that cannot be read never fails the whole file: it is replaced by a `<!-- Markify: page N could not be processed -->` comment and the file shows a warning icon
 - Cancel conversions mid-flight
 - Retry failed files individually
@@ -89,7 +92,6 @@ cd sidecar
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install setuptools==70.0.0
-pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
 pip install -r requirements.txt
 python build.py   # also downloads the OCR models (needs internet once, SHA-256 verified)
 cd ..
@@ -117,7 +119,6 @@ cd sidecar
 python -m venv .venv
 .venv\Scripts\activate
 pip install setuptools==70.0.0
-pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
 pip install -r requirements.txt
 python build.py   # also downloads the OCR models (needs internet once, SHA-256 verified)
 cd ..
@@ -147,6 +148,7 @@ npm run dev
 
 - Languages: Spanish and English (the Latin model also reads other Latin-script languages, but they are not tested).
 - Text only: tables, headings and handwriting are not reconstructed. Lines below the confidence threshold are dropped and reported as a warning instead of emitting noise.
+- DOCX / PPTX: only images shown at 1 % of the page or more are read, each distinct image once; text of fewer than 6 letters/digits is dropped (icons and pictograms produce noise). Images with no text leave no trace — the broken `![](…)` image links markitdown used to emit are gone. EMF/WMF/SVG images are skipped with a warning, crops and rotations applied inside the document are not, and DOCX headers/footers are not extracted.
 - Multi-frame TIFFs: only the first frame is read (a warning says how many were skipped). Password-protected PDFs are rejected; Markify does not ask for the password.
 - Size and speed: OCR adds about 100 MB to the installer. Expect roughly 0.3–1.5 s per scanned page on Apple Silicon; the 1st launch after install is slower while the OS verifies the new files.
 
@@ -182,7 +184,7 @@ markify/
 ├── sidecar/                    # Python conversion engine
 │   ├── main.py                 # Entry point & message loop
 │   ├── converter.py            # Document → Markdown
-│   ├── ocr/                    # Local OCR: engine, layout, image and PDF pipelines
+│   ├── ocr/                    # Local OCR: engine, layout, image, PDF and DOCX/PPTX pipelines
 │   ├── fetch_ocr_models.py     # Downloads the OCR models (build time only, SHA-256 checked)
 │   ├── whisper_handler.py      # Audio → Transcription
 │   ├── model_manager.py        # Whisper model downloader

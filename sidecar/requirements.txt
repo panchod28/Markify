@@ -1,4 +1,4 @@
-markitdown[all]
+markitdown[all]==0.1.6  # fijado: ocr/office_images.py usa pre_process_docx y el marcador de diapositiva de markitdown (0.1.8 ya cambia su salida)
 openai-whisper==20250625  # el enganche de progreso depende de whisper.transcribe.tqdm (ver whisper_progress.py)
 torch
 numpy>=2

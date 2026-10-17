@@ -15,6 +15,7 @@
 │  Input: File[] del drag & drop o file picker                        │
 │     ↓                                                               │
 │  Para cada archivo:                                                 │
+│    ├── ¿.doc o .ppt?          SÍ → FileValidationError(legacy_format)│
 │    ├── ¿Extensión soportada?  NO → FileValidationError(unsupported) │
 │    ├── ¿Tamaño > 500MB?       SÍ → FileValidationError(too_large)   │
 │    ├── ¿Batch total > 2GB?    SÍ → FileValidationError(batch)       │
@@ -65,6 +66,7 @@
 
 | # | Validación | Condición de rechazo | Error emitido |
 |---|-----------|---------------------|---------------|
+| 0 | Formato antiguo de Office | `ext` es `doc` o `ppt` (se comprueba antes que la 1) | `legacy_format` |
 | 1 | Extensión soportada | `ext` no está en `SUPPORTED_EXTENSIONS` | `unsupported` |
 | 2 | Tamaño individual | `file.size > 500MB` | `too_large` |
 | 3 | Límite de cantidad | `files.length + new.length > 50` | `too_many_files` |

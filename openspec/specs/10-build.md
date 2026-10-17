@@ -270,7 +270,7 @@ export default defineConfig(async () => ({
 - `build.py` borra la salida anterior antes de compilar.
 - Flags relevantes: `--collect-submodules numpy._core --collect-submodules numpy.lib` (numpy ≥ 2), `--collect-all magika/markitdown/PIL/pptx`, `--copy-metadata …`, `--collect-data whisper`, y la ruta `setuptools/_vendor` cuando existe `jaraco` (setuptools ≥ 71).
 - OCR: `build.py` llama a `fetch_ocr_models.py` (modelos con SHA-256 fijado; un hash distinto rompe el build) y añade `--add-data <sidecar/ocr/models>:ocr/models`, `--collect-all rapidocr` (con `--exclude-module rapidocr.inference_engine.pytorch`), `--collect-binaries onnxruntime`; después borra los modelos PP-OCRv6 que arrastra el wheel de rapidocr y no se usan. Las importaciones de OCR son perezosas, así que el arranque en frío no cambia.
-- Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV, de una imagen y de un PDF escaneado por OCR, y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
+- Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV, de una imagen, de un PDF escaneado, de un DOCX y de un PPTX con una imagen por OCR, y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
 - Tests: `python -m pytest tests -q` (incluye los tests con OCR real, marcados `ocr`). CI instala `pytest` y `reportlab` (genera los PDFs de prueba) y ejecuta `fetch_ocr_models.py` antes. Medidas locales (Apple Silicon): `python tests/stress_pdf_memory.py 200` → RSS pico ≈ 1.1 GB y plano, ≈ 0.3 s/página.
 - Licencias: `THIRD_PARTY_NOTICES.md` y `THIRD_PARTY_LICENSES.txt` (textos completos, generado con `python sidecar/gen_licenses.py`) se incluyen en el instalador (`Resources/` en macOS vía `tauri.macos.conf.json`, junto al sidecar en Windows vía `tauri.windows.conf.json`). Actualizarlo al añadir o cambiar dependencias de OCR.
 
@@ -279,8 +279,8 @@ export default defineConfig(async () => ({
 ## 6. `sidecar/requirements.txt`
 
 ```
-# Conversión de documentos
-markitdown==0.1.0
+# Conversión de documentos (versión fijada: el OCR de DOCX/PPTX depende de sus internos)
+markitdown[all]==0.1.6
 
 # Transcripción de audio (Whisper local)
 openai-whisper
@@ -296,7 +296,7 @@ PyInstaller==6.8.0
 
 **Comando de instalación para desarrollo:**
 ```bash
-pip install markitdown openai-whisper PyInstaller
+pip install "markitdown[all]==0.1.6" openai-whisper PyInstaller
 pip install torch==2.3.1+cpu torchaudio==2.3.1+cpu \
   --find-links https://download.pytorch.org/whl/torch_stable.html
 ```
@@ -550,6 +550,7 @@ Verificar manualmente antes de cada build de distribución:
 - [ ] El instalador generado funciona en una máquina limpia (sin Node, Python, ni Rust instalados)
 - [ ] Drag & drop de PDF funciona y descarga el .md correctamente
 - [ ] Drag & drop de MP3 funciona (descarga modelo si es necesario) y descarga el .md
+- [ ] Un DOCX y un PPTX con una captura con texto salen con el texto de la imagen en su sitio y sin líneas `![..](..)`; un `.doc` o `.ppt` se rechaza con el mensaje de formato antiguo
 - [ ] Una imagen PNG/JPG (ES y EN) y un PDF escaneado se convierten sin red; las tildes, ñ, ¿ y ¡ salen bien
 - [ ] Un PDF con páginas ilegibles termina con aviso (icono + tooltip) y el resto de páginas convertidas
 - [ ] Múltiples archivos generan ZIP correcto

@@ -126,6 +126,7 @@ import { MAX_FILE_SIZE_BYTES, MAX_TOTAL_BATCH_SIZE_BYTES, MAX_FILES_PER_BATCH } 
 
 export type FileValidationError =
   | { type: 'unsupported'; filename: string; ext: string }
+  | { type: 'legacy_format'; filename: string; ext: string }   // .doc / .ppt: ver 01-types (LEGACY_EXTENSIONS)
   | { type: 'too_large'; filename: string; sizeBytes: number }
   | { type: 'batch_too_large' }
   | { type: 'too_many_files'; current: number; attempted: number }

@@ -121,7 +121,7 @@ Emitir inmediatamente cuando se empieza a procesar un archivo.
 
 **`warnings` (opcional):** si la conversión terminó con avisos no fatales, el payload añade
 `"warnings": [{"page": 7, "stage": "render", "code": "page_failed", "message": "La página 7 no se pudo procesar"}]`.
-Si no hay avisos el campo se **omite** (no se envía vacío). `page` es `null` en avisos de todo el archivo; `message` va localizado según `lang`. Códigos de aviso: `page_failed`, `low_confidence_dropped`, `frames_skipped`. Rust y el frontend lo reenvían sin interpretarlo.
+Si no hay avisos el campo se **omite** (no se envía vacío). `page` es `null` en avisos de todo el archivo; `message` va localizado según `lang`. Códigos de aviso: `page_failed`, `low_confidence_dropped`, `frames_skipped`, `image_failed` (imagen de DOCX/PPTX; con `page` = diapositiva en PPTX) e `images_skipped`. Rust y el frontend lo reenvían sin interpretarlo.
 
 ### 3.4 Archivo con error
 
@@ -747,7 +747,7 @@ def sanitize_filename(original_name: str) -> str:
 ## 12. `requirements.txt`
 
 ```
-markitdown==0.1.0
+markitdown[all]==0.1.6
 openai-whisper
 torch==2.3.1+cpu
 torchaudio==2.3.1+cpu
@@ -782,11 +782,14 @@ PyInstaller==6.8.0
 | `category` / extensión | Handler |
 |---|---|
 | `document`, extensión `.pdf` | `ocr.pdf_pipeline.convert_pdf(path, cancel_flag, on_progress)` |
+| `document`, extensión `.docx` | `ocr.office_images.convert_docx(path, cancel_flag, on_progress)` |
+| `document`, extensión `.pptx` | `ocr.office_images.convert_pptx(path, cancel_flag, on_progress)` |
+| `document`, `.doc` / `.ppt` | `convert_document` lanza `ConversionError("legacy_format")` (el frontend ya los rechaza) |
 | `document`, resto | `convert_document(path)` (sin cambios) |
 | `audio` | `transcribe_audio(...)` |
 | `image` | `ocr.image_converter.convert_image(path)` |
 
-`convert_image` y `convert_pdf` devuelven `ConversionResult(markdown, warnings: list[PageIssue])`; `main.py` serializa los avisos con `error_messages.issue_to_payload(issue, lang)`.
+`convert_image`, `convert_pdf`, `convert_docx` y `convert_pptx` devuelven `ConversionResult(markdown, warnings: list[PageIssue])`; `main.py` serializa los avisos con `error_messages.issue_to_payload(issue, lang)`.
 
 ### 14.2 Motor OCR
 
@@ -828,11 +831,35 @@ Filtra por `MIN_CONFIDENCE=0.5` (devuelve cuántas líneas descartó; se avisa *
 | `ocr_engine_unavailable` | El motor de reconocimiento de texto no está disponible |
 | `ocr_failed` | No se pudo reconocer el texto de la imagen |
 | `pdf_open_failed` | No se pudo abrir el PDF (puede estar dañado) |
+| `legacy_format` | Formato antiguo (.doc / .ppt) no soportado: guárdalo como .docx / .pptx e inténtalo de nuevo |
 | `page_render_failed` | No se pudo procesar el documento (error al leer sus páginas) |
 | `page_failed` | No se pudo procesar el documento |
 
-Todo código nuevo necesita mensaje ES y EN (`tests/test_error_codes.py` lo comprueba). Las plantillas de avisos están en `WARNINGS` (`low_confidence_dropped`, `frames_skipped`, `page_failed`).
+Todo código nuevo necesita mensaje ES y EN (`tests/test_error_codes.py` lo comprueba). Las plantillas de avisos están en `WARNINGS` (`low_confidence_dropped`, `frames_skipped`, `page_failed`, `image_failed`, `image_failed_slide`, `images_skipped`); `issue_to_payload` usa `image_failed_slide` cuando el aviso trae diapositiva.
 
 ### 14.6 Dependencias
 
-`requirements.txt` añade `rapidocr==3.10.0`, `opencv-python-headless>=4.9,<4.13`, `pypdfium2>=4.30` y `pdfminer.six` (explícitos aunque algunos lleguen transitivos).
+`requirements.txt` fija `markitdown[all]==0.1.6` (el OCR de Office depende de sus internos y su salida cambia entre versiones) y añade `rapidocr==3.10.0`, `opencv-python-headless>=4.9,<4.13`, `pypdfium2>=4.30` y `pdfminer.six` (explícitos aunque algunos lleguen transitivos).
+
+### 14.7 Imágenes dentro de DOCX y PPTX (`ocr/office_images.py`)
+
+> Introducido por el change `add-ocr-office-images`.
+
+- **Ruta rápida:** sin imágenes incrustadas (`word/media/*`, `ppt/media/*`), o si el archivo no se puede abrir como zip/python-pptx, se delega en `convert_document` (salida idéntica a la de siempre; el motor OCR no se carga).
+- **DOCX:** `pre_process_docx` (ecuaciones) → mammoth con `img_element` → cada imagen se sustituye en el HTML por sus párrafos de texto (o se quita) → `HtmlConverter`. El texto ocupa el lugar de la imagen; dentro de una celda de tabla va en una sola línea. Si la cadena propia falla antes de leer imágenes, se cae a `convert_document` (sin OCR) con una línea en stderr.
+- **PPTX:** python-pptx abre el archivo y cada imagen (suelta, marcador con imagen o dentro de un grupo) se sustituye por un cuadro de texto en las mismas coordenadas con el alt text en cursiva y el texto OCR; la copia en memoria se convierte con markitdown (`converter.convert_stream`). El tipo de contenido sale de la parte del paquete.
+- **Qué se lee** (calibrado con iconos y fotos reales y un PPTX real; ver el design del change):
+
+| Constante | Valor | Significado |
+|---|---|---|
+| `OFFICE_MIN_AREA` | 0.01 | tamaño mostrado mínimo (fracción de la página o diapositiva); DOCX lo lee de `wp:extent` emparejado por SHA-1 y `w:pgSz` |
+| `FALLBACK_MIN_SIDE_PX` / `FALLBACK_MIN_PIXELS` | 100 / 20 000 | respaldo en píxeles si no se conoce el tamaño mostrado (DOCX) |
+| `OFFICE_MIN_TEXT_CHARS` | 6 | alfanuméricos mínimos para emitir el texto de una imagen (los iconos "leen" 1–5) |
+| `SCAN_COVERAGE` | 0.5 | una imagen que se muestra a esta fracción o más se lee con reintento de orientación (`read_upright`); el resto con un único OCR (`read_simple`) |
+
+- **Deduplicación:** cada imagen distinta (SHA-1) se lee una vez; el texto solo se emite en su primera aparición.
+- **Alt text:** solo la descripción real (no el nombre de la forma, ni un nombre de archivo, ni "Imagen 3") y solo en imágenes relevantes o que aportan texto; se emite como línea en cursiva (`*texto*`) antes del texto OCR.
+- **Avisos y errores:** `image_failed` por imagen (un único `try/except` por imagen, con log en stderr), `images_skipped` agregado para `image/x-emf`, `image/x-wmf` e `image/svg+xml`, `low_confidence_dropped` agregado solo si la imagen aporta texto. Sin motor OCR: error del archivo (`ocr_engine_unavailable`). Si no queda ningún texto: `no_text_found`.
+- **Progreso y cancelación:** `file_progress` tras cada imagen (0–99) y `cancel_flag` antes de cada una; al cancelar devuelve `""`.
+- **Salida distinta a la anterior (deliberada):** con imágenes desaparecen las líneas `![..](data:...)` y `![..](X.jpg)`.
+

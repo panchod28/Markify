@@ -24,7 +24,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools==70.0.0
-          pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
           pip install -r requirements.txt
           pip install pytest reportlab
           python fetch_ocr_models.py
