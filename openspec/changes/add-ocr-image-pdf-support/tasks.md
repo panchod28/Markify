@@ -36,17 +36,17 @@
 
 ## 3. Fase 2 — PDFs escaneados y ruta híbrida (liberable)
 
-- [ ] 3.1 Crear `ocr/page_classifier.py` (`classify_page` pura, constantes calibradas) + tabla de tests de casos y fronteras
-- [ ] 3.2 Crear `ocr/pdf_pipeline.py`: apertura con pypdfium2, medición de métricas por página, errores fatales (`pdf_encrypted`, `pdf_open_failed`, 0 páginas)
-- [ ] 3.3 Ruta rápida: todo TEXT/BLANK → `convert_document` sin cambios; test de igualdad byte a byte con varios PDFs de texto
-- [ ] 3.4 Ruta híbrida: texto de página con pdfminer, página SCANNED con render (≤ 2 600 px, una página en memoria) + OCR + layout, ensamblado en orden
-- [ ] 3.5 Aislamiento de fallos: captura única por página, marcador `<!-- Markify: página N … -->`, `PageIssue`, regla "todas fallan → error con el primer `code`"
-- [ ] 3.6 Cancelación antes de cada página y progreso por página (`on_progress`) conectado a `main.py` (`file_progress` sin `warnings`)
-- [ ] 3.7 `converter.py`/`main.py`: los `.pdf` pasan por `convert_pdf`; el resto de documentos no cambia
-- [ ] 3.8 Tests con motor *fake*: mezcla de clases, página que explota, todas explotan, cancelación a mitad, progreso, PDF vacío/0 páginas, cifrado
-- [ ] 3.9 Tests OCR reales (`-m ocr`) sobre escaneados ES/EN con umbral de CER
-- [ ] 3.10 Prueba de memoria/tiempo con PDF escaneado sintético de ≥ 200 páginas; ampliar el smoke test del binario con un PDF escaneado
-- [ ] 3.11 Verificación manual Mac + Windows: escaneado, mixto, cifrado, ruta con acentos y espacios; sin regresión de PDFs de texto
+- [x] 3.1 Crear `ocr/page_classifier.py` (`classify_page` pura, constantes calibradas) + tabla de tests de casos y fronteras *Umbrales 25 / 0.05 / 0.5; 20 casos y fronteras. Cobertura = suma de imágenes (tope 1), imagen mayor aparte para MIXED.*
+- [x] 3.2 Crear `ocr/pdf_pipeline.py`: apertura con pypdfium2, medición de métricas por página, errores fatales (`pdf_encrypted`, `pdf_open_failed`, 0 páginas) *pypdfium2 5.10; error de contraseña → `PermissionError` actual; "Data format error" y 0 páginas → `pdf_open_failed`. Una página que falla al medir se trata como SCANNED y el render decide.*
+- [x] 3.3 Ruta rápida: todo TEXT/BLANK → `convert_document` sin cambios; test de igualdad byte a byte con varios PDFs de texto *`convert_pdf == convert_document` en 4 PDFs (texto, 5 págs, tabla, escaneo con capa de texto); el motor no se carga. MIXED cuenta como TEXT hasta 4.1.*
+- [x] 3.4 Ruta híbrida: texto de página con pdfminer, página SCANNED con render (≤ 2 600 px, una página en memoria) + OCR + layout, ensamblado en orden *150 DPI, lado mayor ≤ 1 800 px (no 2 600), una página en memoria. CER 0.0 % en ES (tildes, ñ, ¿ ¡) y EN sobre el corpus sintético, ~0.4–0.6 s/página en este Mac.*
+- [x] 3.5 Aislamiento de fallos: captura única por página, marcador `<!-- Markify: página N … -->`, `PageIssue`, regla "todas fallan → error con el primer `code`" *`PageIssue("page_failed", stage)` + marcador con el código de causa (`page_render_failed`, `ocr_failed`, `page_failed`); el spec se ajustó a esto. Avisos de baja confianza agregados en uno solo por archivo.*
+- [x] 3.6 Cancelación antes de cada página y progreso por página (`on_progress`) conectado a `main.py` (`file_progress` sin `warnings`) *Progreso `100·i/n` tras cada página (tope 99); cancelación medida: 0.11 s con páginas de 0.36 s.*
+- [x] 3.7 `converter.py`/`main.py`: los `.pdf` pasan por `convert_pdf`; el resto de documentos no cambia *Solo `.pdf` entra por `convert_pdf`; resto de documentos intacto.*
+- [x] 3.8 Tests con motor *fake*: mezcla de clases, página que explota, todas explotan, cancelación a mitad, progreso, PDF vacío/0 páginas, cifrado *`test_ocr_page_classifier.py` + `test_ocr_pdf_pipeline.py` (motor falso): mezcla, página que explota, página ilegible, todas fallan, sin texto, cancelación a mitad y previa, progreso, cifrado, truncado, 0 páginas. Fixtures generados por `make_fixtures.py` (nada binario commiteado).*
+- [x] 3.9 Tests OCR reales (`-m ocr`) sobre escaneados ES/EN con umbral de CER *Dentro de `test_ocr_pdf_pipeline.py` (`-m ocr`): CER 0.0 % (umbral 5 %) en ES y EN.*
+- [x] 3.10 Prueba de memoria/tiempo con PDF escaneado sintético de ≥ 200 páginas; ampliar el smoke test del binario con un PDF escaneado *`tests/stress_pdf_memory.py`, 200 páginas: 72 s (0.36 s/pág), RSS plano (1er cuarto 1 881 MB → último 1 645 MB) pero **pico ≈ 1.88 GB, por encima del presupuesto de 1.5 GB** (lo fija la 2.ª inferencia de ONNX, no el nº de páginas; también afecta a imágenes). Ajuste en 4.7. Smoke test del binario con PDF escaneado de 2 páginas: OK (arranque posterior 2.1 s).*
+- [ ] 3.11 Verificación manual Mac + Windows: escaneado, mixto, cifrado, ruta con acentos y espacios; sin regresión de PDFs de texto *Pendiente: solo se verificó el binario por smoke test en macOS; falta la prueba manual en la UI (mixto, cifrado, ruta con acentos) y todo Windows.*
 - [ ] 3.12 Release interno de Fase 2
 
 ## 4. Fase 3 — Mixtos, rotación, baja calidad y endurecimiento
