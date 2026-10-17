@@ -21,7 +21,24 @@ from ocr.pdf_pipeline import convert_pdf  # noqa: E402
 
 
 def rss_mb() -> float:
+    """Memoria residente del proceso (working set en Windows)."""
     import os
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class Counters(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD)] + [
+                (n, ctypes.c_size_t) for n in ("PeakWorkingSetSize", "WorkingSetSize", "QuotaPeakPagedPoolUsage",
+                                               "QuotaPagedPoolUsage", "QuotaPeakNonPagedPoolUsage",
+                                               "QuotaNonPagedPoolUsage", "PagefileUsage", "PeakPagefileUsage")]
+
+        c = Counters()
+        c.cb = ctypes.sizeof(c)
+        handle = ctypes.windll.kernel32.GetCurrentProcess()
+        ctypes.windll.kernel32.K32GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+        assert ctypes.windll.kernel32.K32GetProcessMemoryInfo(handle, ctypes.byref(c), c.cb), "GetProcessMemoryInfo falló"
+        return c.WorkingSetSize / 1024 / 1024
     return int(subprocess.check_output(["ps", "-o", "rss=", "-p", str(os.getpid())]).split()[0]) / 1024
 
 
@@ -46,6 +63,8 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         pdf = Path(tmp) / "big.pdf"
         make_pdf(pdf, pages)
+        import platform
+        print(f"{platform.platform()} | {platform.processor() or platform.machine()} | Python {platform.python_version()}")
         print(f"PDF: {pages} páginas, {pdf.stat().st_size / 1024:.0f} KB")
 
         samples, stamps = [], []

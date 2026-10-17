@@ -315,3 +315,26 @@ class TestRealRotationAndLayout:
         md = run(pdfs["scan_two_columns"]).markdown
         order = ["Primera columna", "termina aqui", "Segunda columna", "cierra el documento", "Pagina 1"]
         assert [md.index(t) for t in order] == sorted(md.index(t) for t in order), md
+
+
+# --- rutas con acentos, ñ y espacios (Windows incluido: CI) ------------------------------------
+
+@pytest.mark.parametrize("name", ["scan_mixed", "text_table", "bad_page"])
+def test_unicode_and_spaced_paths_work(pdfs, tmp_path, name):
+    import shutil
+    folder = tmp_path / "Año nuevo ñandú y espacios"
+    folder.mkdir()
+    target = folder / "informe de gestión.pdf"
+    shutil.copy(pdfs[name], target)
+    assert run(target, FakeEngine()).markdown == run(pdfs[name], FakeEngine()).markdown
+
+
+@pytest.mark.ocr
+@pytest.mark.skipif(not _models_available(), reason="faltan los modelos OCR (fetch_ocr_models.py)")
+def test_real_ocr_on_a_unicode_path(pdfs, tmp_path):
+    import shutil
+    folder = tmp_path / "Año nuevo ñandú y espacios"
+    folder.mkdir()
+    target = folder / "escaneado ñ.pdf"
+    shutil.copy(pdfs["scan_es"], target)
+    assert cer(" ".join(ES_LINES), run(target).markdown) <= 0.05

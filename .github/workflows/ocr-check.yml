@@ -1,0 +1,51 @@
+name: OCR check (manual)
+
+# Verificación manual del OCR en cada plataforma (sobre todo Windows): tests, memoria/tiempo con un PDF escaneado
+# de 60 páginas, build del sidecar, smoke test y tamaño. No publica nada. Lanzar desde la pestaña Actions.
+on:
+  workflow_dispatch:
+
+jobs:
+  ocr-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        working-directory: sidecar
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools==70.0.0
+          pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
+          pip install -r requirements.txt
+          pip install pytest reportlab
+          python fetch_ocr_models.py
+
+      - name: Tests (incluye OCR real y rutas con acentos)
+        working-directory: sidecar
+        run: python -m pytest tests -q
+
+      # Cifras para 1.3b: RSS pico (presupuesto 1.5 GB), s/página y latencia de cancelación en este runner.
+      - name: Memory and time (60 scanned pages)
+        working-directory: sidecar
+        run: python tests/stress_pdf_memory.py 60
+
+      - name: Build sidecar
+        working-directory: sidecar
+        run: python build.py
+
+      - name: Smoke test sidecar
+        working-directory: sidecar
+        run: python smoke_test.py --max-seconds 3
+
+      - name: Sidecar size
+        shell: bash
+        run: du -sh src-tauri/binaries/markify-sidecar
