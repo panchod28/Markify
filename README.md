@@ -86,7 +86,7 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install setuptools==70.0.0
 pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
-pip install "numpy<2.4" openai-whisper torch PyInstaller
+pip install -r requirements.txt
 python build.py
 cd ..
 
@@ -114,7 +114,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install setuptools==70.0.0
 pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
-pip install "numpy<2.4" openai-whisper torch PyInstaller
+pip install -r requirements.txt
 python build.py
 cd ..
 
@@ -167,7 +167,7 @@ markify/
 │   └── types/                  # TypeScript type definitions
 ├── src-tauri/                  # Tauri backend (Rust)
 │   ├── src/                    # Rust command handlers
-│   └── binaries/               # Compiled sidecar binary
+│   └── binaries/               # Compiled sidecar folder (PyInstaller --onedir)
 ├── sidecar/                    # Python conversion engine
 │   ├── main.py                 # Entry point & message loop
 │   ├── converter.py            # Document → Markdown

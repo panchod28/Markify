@@ -99,11 +99,12 @@ markify/
 │   │   ├── 128x128@2x.png
 │   │   ├── icon.icns             ← macOS
 │   │   └── icon.ico              ← Windows
-│   ├── binaries/                 ← Aquí van los sidecar compilados
-│   │   ├── markify-sidecar-x86_64-apple-darwin      ← Mac Intel
-│   │   ├── markify-sidecar-aarch64-apple-darwin     ← Mac Apple Silicon
-│   │   ├── markify-sidecar-x86_64-pc-windows-msvc.exe ← Windows
-│   │   └── markify-sidecar-x86_64-unknown-linux-gnu ← Linux
+│   ├── binaries/                 ← Salida de build.py (ignorada por git)
+│   │   └── markify-sidecar/      ← PyInstaller --onedir
+│   │       ├── markify-sidecar[.exe]
+│   │       └── _internal/        ← librerías y datos
+│   ├── tauri.macos.conf.json     ← bundle.macOS.files → Resources/sidecar
+│   ├── tauri.windows.conf.json   ← bundle.resources → sidecar/
 │   └── src/
 │       ├── main.rs
 │       ├── lib.rs
@@ -262,84 +263,13 @@ export default defineConfig(async () => ({
 
 ## 5. Build del Python Sidecar (`sidecar/build.py`)
 
-```python
-# sidecar/build.py
-"""
-Script para compilar el sidecar Python con PyInstaller.
-Ejecutar desde la raíz del proyecto: npm run build:sidecar
-O directamente: cd sidecar && python build.py
-"""
+> Actualizado por el change `sidecar-onedir`. El código vigente es `sidecar/build.py`; aquí solo se fijan las reglas.
 
-import subprocess
-import sys
-import platform
-from pathlib import Path
-
-
-def get_target_triple() -> str:
-    """
-    Retorna el target triple de la plataforma actual.
-    Debe coincidir con el nombre que Tauri espera en src-tauri/binaries/.
-    """
-    system = platform.system()
-    machine = platform.machine()
-
-    if system == "Darwin":
-        if machine == "arm64":
-            return "aarch64-apple-darwin"
-        return "x86_64-apple-darwin"
-    elif system == "Windows":
-        return "x86_64-pc-windows-msvc"
-    elif system == "Linux":
-        return "x86_64-unknown-linux-gnu"
-    else:
-        raise RuntimeError(f"Plataforma no soportada: {system}")
-
-
-def build():
-    target = get_target_triple()
-    binary_name = f"markify-sidecar-{target}"
-    output_dir = Path(__file__).parent.parent / "src-tauri" / "binaries"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    print(f"→ Building sidecar para {target}...")
-    print(f"→ Output: {output_dir / binary_name}")
-
-    cmd = [
-        sys.executable, "-m", "PyInstaller",
-        "--onefile",
-        "--name", binary_name,
-        "--distpath", str(output_dir),
-        "--workpath", str(Path(__file__).parent / "build" / "work"),
-        "--specpath", str(Path(__file__).parent / "build"),
-        "--clean",
-        "--noconfirm",
-        # No incluir GUI — es un proceso de línea de comandos
-        "--console",
-        # Excluir módulos pesados innecesarios
-        "--exclude-module", "matplotlib",
-        "--exclude-module", "PIL",
-        "--exclude-module", "tkinter",
-        "--exclude-module", "PyQt5",
-        "--exclude-module", "wx",
-        "--exclude-module", "notebook",
-        "--exclude-module", "IPython",
-        # Entry point
-        "main.py",
-    ]
-
-    result = subprocess.run(cmd, cwd=str(Path(__file__).parent))
-
-    if result.returncode != 0:
-        print("✗ Build failed")
-        sys.exit(1)
-
-    print(f"✓ Sidecar compilado exitosamente: {output_dir / binary_name}")
-
-
-if __name__ == "__main__":
-    build()
-```
+- PyInstaller en modo **`--onedir`** (no `--onefile`): el `--onefile` re-extraía ~570 MB en cada arranque (41–50 s en macOS); con `--onedir` el primer arranque es lento una sola vez y los siguientes tardan ≈ 2 s.
+- Salida fija: `src-tauri/binaries/markify-sidecar/` (ejecutable + `_internal/`), sin target triple en el nombre. Cada plataforma compila la suya; el triple solo se usa para nombrar el artefacto de CI.
+- `build.py` borra la salida anterior antes de compilar.
+- Flags relevantes: `--collect-submodules numpy._core --collect-submodules numpy.lib` (numpy ≥ 2), `--collect-all magika/markitdown/PIL/pptx`, `--copy-metadata …`, `--collect-data whisper`, y la ruta `setuptools/_vendor` cuando existe `jaraco` (setuptools ≥ 71).
+- Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
 
 ---
 
@@ -389,7 +319,7 @@ pip3.11 install -r sidecar/requirements.txt \
 
 # 4. Compilar el sidecar Python
 npm run build:sidecar
-# → Genera: src-tauri/binaries/markify-sidecar-{arch}-apple-darwin
+# → Genera: src-tauri/binaries/markify-sidecar/ (carpeta --onedir)
 
 # 5. Compilar la app Tauri
 npm run build
@@ -461,23 +391,15 @@ npx tauri icon path/to/icon-1024.png
 
 ---
 
-## 9. Configuración del nombre del binario en Tauri
+## 9. Cómo se incluye el sidecar en la app
 
-El sidecar debe estar listado en `tauri.conf.json` con el nombre base (sin el target triple):
+`tauri.conf.json` **ya no** usa `bundle.externalBin`. La carpeta se incluye según la plataforma y se lanza desde Rust por ruta (`app.shell().command(ruta)`):
 
-```json
-{
-  "bundle": {
-    "externalBin": ["binaries/markify-sidecar"]
-  }
-}
-```
-
-Tauri automáticamente añade el target triple al nombre al empaquetar. En el código Rust, se referencia como:
-
-```rust
-app.shell().sidecar("markify-sidecar")
-```
+| Contexto | Configuración | Ruta |
+|---|---|---|
+| macOS instalado | `tauri.macos.conf.json`: `bundle.macOS.files = {"Resources/sidecar": "binaries/markify-sidecar"}` (conserva los symlinks; `bundle.resources` los desreferencia y añade ~280 MB) | `Contents/Resources/sidecar/markify-sidecar` |
+| Windows instalado | `tauri.windows.conf.json`: `bundle.resources = {"binaries/markify-sidecar/": "sidecar/"}` | `<recursos>/sidecar/markify-sidecar.exe` |
+| `tauri dev` | nada (no se copia) | `src-tauri/binaries/markify-sidecar/…` vía `CARGO_MANIFEST_DIR` |
 
 ---
 
@@ -619,7 +541,7 @@ Verificar manualmente antes de cada build de distribución:
 - [ ] `npm run type-check` pasa sin errores
 - [ ] `npm run lint` pasa sin errores
 - [ ] `npm run test` pasa todos los tests
-- [ ] Sidecar compilado para la plataforma objetivo (binario existe en `src-tauri/binaries/`)
+- [ ] Sidecar compilado para la plataforma objetivo (carpeta `src-tauri/binaries/markify-sidecar/` existe y `python sidecar/smoke_test.py` pasa)
 - [ ] `npm run build` completa sin errores
 - [ ] El instalador generado funciona en una máquina limpia (sin Node, Python, ni Rust instalados)
 - [ ] Drag & drop de PDF funciona y descarga el .md correctamente

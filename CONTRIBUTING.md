@@ -124,7 +124,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install setuptools==70.0.0
 pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
-pip install "numpy<2.4" openai-whisper torch PyInstaller
+pip install -r requirements.txt
 python build.py
 cd ..
 ```
@@ -137,12 +137,14 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install setuptools==70.0.0
 pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
-pip install "numpy<2.4" openai-whisper torch PyInstaller
+pip install -r requirements.txt
 python build.py
 cd ..
 ```
 
-> **Note:** `build.py` compiles the sidecar with PyInstaller into a single binary placed at `src-tauri/binaries/`. The Tauri build process expects it there.
+> **Note:** `build.py` compiles the sidecar with PyInstaller (`--onedir`) into the **folder** `src-tauri/binaries/markify-sidecar/` (the executable plus `_internal/`). `tauri dev` runs it from there and the installers bundle it. Re-run `npm run build:sidecar` after pulling changes to the sidecar; any older single-file `markify-sidecar-<target>` binary is no longer used and can be deleted.
+>
+> The first launch of a freshly built sidecar can take 30–50 s on macOS (one-time OS verification of the new files); later launches take about 2 s. You can check a build with `python smoke_test.py` from `sidecar/`.
 
 ### Run in Development
 

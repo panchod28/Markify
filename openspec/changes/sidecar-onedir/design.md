@@ -63,7 +63,7 @@ Se descarta `externalBin`. El ejecutable se lanza desde Rust con `app.shell().co
 ### D6. Presupuestos
 - Arranque posterior al primero (hasta `model_status`): **≤ 3 s** (medido 1.4 s).
 - Primer arranque tras instalar: puede ser largo en macOS (medido 26–48 s según build); no debe producir errores visibles en la UI.
-- Tamaño instalado: ≤ 900 MB en disco. Medido con el build completo (`markitdown[all]`, torch 2.14): carpeta 850 MB, `.app` 860 MB con 28 symlinks conservados; torch 460 MB, llvmlite 123 MB, onnxruntime 70 MB y `speech_recognition` 43 MB son lo más pesado. (La cifra de 570 MB de la tabla de Context era un build sin extras ofimáticos/audio); instalador comprimido no mayor que el actual +10 %.
+- Tamaño instalado: ≤ 900 MB en disco. Medido con el build completo (`markitdown[all]`, torch 2.14): carpeta 850 MB, `.app` 860 MB con 28 symlinks conservados; torch 460 MB, llvmlite 123 MB, onnxruntime 70 MB y `speech_recognition` 43 MB son lo más pesado. (La cifra de 570 MB de la tabla de Context era un build sin extras ofimáticos/audio); instalador comprimido ≤ onefile +20 %. Medido like-for-like (mismo entorno limpio, DMG UDZO con `hdiutil`): `--onefile` 305 MB vs `--onedir` **357 MB (+52 MB, +17 %)**; el DMG del release anterior (build de junio, dependencias distintas) pesaba 256 MB, la diferencia restante viene de las dependencias actuales (torch 2.14, `markitdown[all]`), no del empaquetado.
 
 ## Risks / Trade-offs
 

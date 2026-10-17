@@ -304,12 +304,16 @@ pub async fn open_in_folder(file_path: String) -> Result<(), String> {
 // Se llama en lib.rs setup(), no desde el frontend.
 // Spawna el proceso Python y arranca el loop de lectura de stdout.
 
+// Tiempo máximo de check_whisper_model: el primer arranque en macOS puede tardar ~30-50 s.
+const CHECK_MODEL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+
 pub fn spawn_sidecar(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri_plugin_shell::ShellExt;
 
-    let sidecar_command = app.shell()
-        .sidecar("markify-sidecar")
-        .map_err(|e| format!("Sidecar no encontrado: {}", e))?;
+    // El sidecar es una carpeta PyInstaller --onedir (ver spec 10, §9): se lanza por ruta,
+    // no con `.sidecar()`. `sidecar_path()` resuelve dev (src-tauri/binaries) o instalada (recursos).
+    let path = sidecar_path(app)?;
+    let sidecar_command = app.shell().command(path);
 
     let (mut rx, child) = sidecar_command.spawn()?;
 
@@ -573,8 +577,7 @@ strip = true
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "externalBin": ["binaries/markify-sidecar"]
+    ]
   }
 }
 ```
