@@ -67,7 +67,15 @@ def handle_convert(payload: dict):
 
         try:
             warnings = []
-            if category == "document":
+            if category == "document" and path.lower().endswith(".pdf"):
+                # Importación bajo demanda: el motor OCR solo se carga si hay páginas escaneadas.
+                from ocr.pdf_pipeline import convert_pdf
+                result = convert_pdf(path, _cancel_flag, lambda pct, fid=file_id: write_message({
+                    "type": "file_progress",
+                    "payload": {"fileId": fid, "status": "processing", "progress": pct}
+                }))
+                content, warnings = result.markdown, result.warnings
+            elif category == "document":
                 content = convert_document(path)
             elif category == "audio":
                 content = transcribe_audio(path, file_id, _cancel_flag)

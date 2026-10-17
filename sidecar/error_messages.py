@@ -18,6 +18,9 @@ MESSAGES = {
         "image_too_large":        "La imagen es demasiado grande para procesarla",
         "ocr_engine_unavailable": "El motor de reconocimiento de texto no está disponible",
         "ocr_failed":             "No se pudo reconocer el texto de la imagen",
+        "pdf_open_failed":        "No se pudo abrir el PDF (puede estar dañado)",
+        "page_render_failed":     "No se pudo procesar el documento (error al leer sus páginas)",
+        "page_failed":            "No se pudo procesar el documento",
     },
     "en": {
         "FileNotFoundError":  "Could not find the file",
@@ -33,6 +36,9 @@ MESSAGES = {
         "image_too_large":        "The image is too large to process",
         "ocr_engine_unavailable": "The text recognition engine is not available",
         "ocr_failed":             "Could not recognize the text in the image",
+        "pdf_open_failed":        "Could not open the PDF (it may be corrupted)",
+        "page_render_failed":     "Could not process the document (error reading its pages)",
+        "page_failed":            "Could not process the document",
     }
 }
 

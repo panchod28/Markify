@@ -2,6 +2,8 @@ markitdown[all]
 openai-whisper==20250625  # el enganche de progreso depende de whisper.transcribe.tqdm (ver whisper_progress.py)
 torch
 numpy>=2
+pypdfium2>=4.30  # abrir/renderizar/clasificar páginas PDF (ocr/pdf_pipeline.py); también lo trae pdfplumber
+pdfminer.six  # texto por página en la ruta híbrida (mismo motor que markitdown)
 rapidocr==3.10.0
 opencv-python-headless>=4.9,<4.13
 PyInstaller==6.8.0
