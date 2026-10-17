@@ -75,7 +75,12 @@ There is no Intel Mac build yet.
   Documents, images and OCR work without it. If you try audio or video without FFmpeg the file fails with a generic conversion error.
 - **The Whisper model (~145 MB) is downloaded the first time you transcribe audio**, so that first time needs an internet connection. Everything else, OCR included, works fully offline.
 - **First launch is slow** (30–40 s on macOS) while the system verifies the app's files; later launches take about 2 s.
-- **macOS asks for confirmation the first time.** The app is not notarized, so macOS may say it cannot verify the developer. Drag Markify to *Applications*, then right-click (or Control-click) it → **Open** → **Open**. If the warning does not offer that, go to *System Settings → Privacy & Security* and click **Open Anyway** next to Markify.
+- **macOS blocks the app the first time.** The app is not notarized by Apple, so macOS says it cannot verify it. Drag Markify to *Applications* and:
+  - **macOS 15 (Sequoia) or later:** double-click Markify once and close the warning (*Done*). Then open *System Settings → Privacy & Security*, scroll to *Security*, click **Open Anyway** next to "Markify was blocked…", confirm with your password or Touch ID, and click **Open**.
+  - **macOS 14 or earlier:** right-click (or Control-click) Markify → **Open** → **Open**.
+  - **If macOS says the app is "damaged":** open Terminal and run `xattr -dr com.apple.quarantine /Applications/Markify.app`, then open it again.
+
+  You only have to do this once.
 
 ---
 

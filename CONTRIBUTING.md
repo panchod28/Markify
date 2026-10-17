@@ -381,7 +381,7 @@ npm run tauri build                                         # .dmg in src-tauri/
 Then, from the UI of the built app, convert a folder made with `python sidecar/tests/make_regression_folder.py <dir>` (one file per accepted format) and check the ZIP. Two things to keep in mind when packaging:
 
 - **Do not leave a Whisper model inside `src-tauri/binaries/`** (`models/whisper/base.pt`): it would be bundled and add ~145 MB. The app downloads it on first use.
-- **macOS signing**: `tauri.macos.conf.json` sets `signingIdentity` to `-` (ad-hoc) so the whole bundle, including the sidecar copied into `Resources/`, is signed *after* it is assembled. Without it the signature is invalid (`codesign --verify --deep` fails) and a downloaded copy may be reported as "damaged" instead of the usual "unidentified developer" warning. There is no Apple notarization, so users must right-click → Open the first time (see the README).
+- **macOS signing**: `tauri.macos.conf.json` sets `signingIdentity` to `-` (ad-hoc) so the whole bundle, including the sidecar copied into `Resources/`, is signed *after* it is assembled. Without it the signature is invalid (`codesign --verify --deep` fails) and a downloaded copy may be reported as "damaged" instead of the usual "unidentified developer" warning. There is no Apple notarization, so users must approve it the first time (*Open Anyway* in System Settings on macOS 15+, right-click → Open before; see the README).
 
 Upload the `.dmg` (and, later, the Windows installer) to the repository's releases page.
 
