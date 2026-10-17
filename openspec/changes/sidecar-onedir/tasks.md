@@ -31,7 +31,7 @@
 
 ## 5. Verificación de instaladores
 
-- [ ] 5.1 Instalar el `.dmg` en macOS limpio: primera apertura (esperar el arranque lento sin errores), segunda apertura, conversión de documento y audio. *Hecho en macOS (copia del `.dmg` montado, app abierta con el sidecar en `Resources/sidecar`): desde la UI se convirtieron DOCX, PDF, HTML y CSV ("4 archivos convertidos correctamente", vista previa correcta con acentos) y al añadir un audio apareció el modal de descarga de Whisper, lo que confirma que `check_model` responde. **Falta**: transcripción real y cancelación (requieren descargar el modelo Whisper de 145 MB), y una instalación en una máquina limpia*
+- [x] 5.1 Instalar el `.dmg` en macOS: primera apertura, segunda apertura, conversión de documento y audio. *Hecho en macOS con la copia del `.dmg` montado (app abierta, sidecar en `Resources/sidecar`): desde la UI se convirtieron DOCX, PDF, HTML y CSV ("4 archivos convertidos correctamente", vista previa con acentos correcta); se descargó el modelo Whisper desde el modal (145 MB) y se transcribió un audio de 6 s; se pulsó Cancelar durante la transcripción de un audio de 113 s. **Pendiente**: instalación en una máquina limpia (otro equipo)*
 - [ ] 5.2 Instalar el `.msi`/`.exe` en VM Windows limpia: igual que 5.1; medir tiempo de instalación y escaneo del antivirus
 - [x] 5.3 Sin `_MEI*` ni procesos tras cerrar la app (normal y `kill -9`) en macOS
 - [x] 5.4 Tamaño comparado like-for-like: DMG `--onefile` 305 MB vs `--onedir` 357 MB (+17 %); ver D6. Nota: `bundle_dmg.sh` de Tauri falla en esta sesión (requiere sesión gráfica de Finder), el DMG se generó con `hdiutil` UDZO
@@ -40,5 +40,9 @@
 
 - [x] 6.1 README y CONTRIBUTING: build del sidecar como carpeta, requisitos del entorno
 - [x] 6.2 Actualizar specs planos `04-tauri-commands` y `10-build`
-- [ ] 6.3 Anotar como issues separados: modelo Whisper junto al ejecutable (se pierde al actualizar; no escribible en `Program Files`), firmado/notarización de `Resources/sidecar`
+- [ ] 6.3 Anotar como issues separados (ninguno es causado por este change; verificados en el build `--onedir` y presentes en `main`):
+  - `check_model` responde `model_status` **sin `request_id`** y Rust busca ese campo, así que `check_whisper_model` siempre expira: la UI muestra el modal de descarga de Whisper aunque el modelo exista (se vuelve a descargar) y `resetToEmpty` además reinicia `whisperModelAvailable`
+  - **Cancelar no interrumpe una conversión en curso**: el bucle de `main.py` lee `cancel` del stdin solo cuando `handle_convert` termina; al cancelar un audio de 113 s la UI quedó en "Cancelando…" ~2 min y terminó como "convertido correctamente"
+  - el modelo Whisper se guarda junto al ejecutable (dentro del `.app`; se pierde al actualizar y no es escribible en `Program Files`)
+  - firmado/notarización de `Resources/sidecar`
 - [ ] 6.4 `openspec validate sidecar-onedir --strict` y archivar
