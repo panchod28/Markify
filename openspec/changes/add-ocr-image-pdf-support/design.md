@@ -101,7 +101,7 @@ Render a **150 DPI** con lado mayor limitado (~1 800 px); el spike midió 1.5 s/
 
 Entrada: `list[OcrLine]` con cajas. Pasos: descartar líneas con `confidence < MIN_CONFIDENCE` (contadas en un warning agregado, no una por línea) → detectar columnas por huecos en la proyección horizontal → ordenar arriba-abajo dentro de cada columna → unir líneas en párrafos si el salto vertical < ~1.5× la altura mediana → trim y normalización de espacios. No se infieren encabezados ni tablas (el OCR no los conoce; heurísticas frágiles = bugs).
 
-**Orientación (nivel página, sin `cls`)**: se OCR-ea a 0°; si no se detecta texto (o muy poco frente a lo esperable) se reintenta a 90°/180°/270° y se elige la mayor suma `confianza × longitud`. El spike mostró que una orientación equivocada produce **0 líneas** (señal inequívoca) y que RapidOCR ya lee de forma nativa un sentido de 90°; el reintento solo se paga en páginas problemáticas. Páginas con `/Rotate` se resuelven antes, en el render de pdfium.
+**Orientación (nivel página, sin `cls`)**: se OCR-ea a 0°; si no se detecta texto (o muy poco frente a lo esperable) se reintenta a 90°/180°/270° y se elige la mayor suma `confianza × longitud`. El spike mostró que una orientación equivocada produce **0 líneas** (señal inequívoca) y que RapidOCR ya lee de forma nativa un sentido de 90°; el reintento solo se paga en páginas problemáticas. Páginas con `/Rotate` se resuelven antes, en el render de pdfium. Corrección de la Fase 3: una orientación equivocada no siempre da 0 líneas (a 90°/270° el motor lee texto vertical con confianza ~1.0 y cajas altas que el layout no ordena), así que solo se cuentan las líneas horizontales para decidir y puntuar.
 
 ### D7. Errores y diagnóstico trazables
 
@@ -186,6 +186,7 @@ Entorno aislado (Python 3.12, `rapidocr` 3.10.0, `onnxruntime` 1.31, `pypdfium2`
 | S7 | Arranque congelado | OCR-only `--onefile`: 145 MB; `import cv2` 14.5 s congelado vs 0.11 s normal; sidecar actual 41–46 s en arrancar; `--onedir`: 27 s la primera vez, 0.25 s después | Open Question 7; cv2 es el mayor coste de tamaño y arranque |
 | S8 | Rotación | Orientación errónea → 0 líneas detectadas; rotando 0/90/180/270 aparece el texto con confianza 0.99 | Reintento de rotación por página (D6) |
 | S9 | `pypdfium2` | Es dependencia de `pdfplumber` 0.11.10 (`markitdown[pdf]`); el `.venv` local no la tiene porque no instaló los extras PDF | Fijar explícito en `requirements.txt` |
+| S10 | Fases 2–3 (mac arm64, `onnxruntime` 1.27) | Con `Det.limit_type=min/736` el pico llegó a 1.88 GB; con `max/1280` 1.1 GB y 0.31 s/pág, mismo CER en texto de 7–10 pt | `rapidocr_engine.py` fija `max/1280`; el presupuesto ≤ 1.5 GB se cumple |
 
 **No cubierto por el spike (pendiente)**: Windows (tiempos, tamaño, VC++ runtime, rutas Unicode) — requiere runner Windows en CI; escaneos y fotos reales; ordenación de 2 columnas (el motor devuelve cajas utilizables, la heurística se valida en 4.4); integración completa con torch/whisper/magika en un solo binario; compatibilidad de `numpy` 2.4 con `opencv` 4.12 (el spike usó `numpy` 2.2.6).
 
