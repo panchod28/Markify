@@ -74,3 +74,6 @@ lerna-debug.log*
 
 # Modelos OCR (se descargan en build con fetch_ocr_models.py)
 sidecar/ocr/models/
+
+# Carpeta de regresión generada por sidecar/tests/make_regression_folder.py
+regresion-formatos/
