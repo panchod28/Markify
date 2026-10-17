@@ -5,6 +5,10 @@
     "no_text_found": "No text was found in the file",
     "audio_too_short": "The audio is too short or contains no detected speech",
     "file_not_found": "Could not find the file",
-    "unknown": "Unexpected error while converting the file"
+    "unknown": "Unexpected error while converting the file",
+    "image_decode_failed": "Could not read the image (it may be corrupted)",
+    "image_too_large": "The image is too large to process",
+    "ocr_engine_unavailable": "The text recognition engine is not available",
+    "ocr_failed": "Could not recognize the text in the image"
   }
 }

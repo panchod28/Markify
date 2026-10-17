@@ -1,6 +1,6 @@
 // ─── Categoría de archivo ─────────────────────────────────────────────────
-// Determina qué herramienta usa el sidecar: markitdown o Whisper.
-export type FileCategory = 'document' | 'audio';
+// Determina qué herramienta usa el sidecar: markitdown, Whisper u OCR.
+export type FileCategory = 'document' | 'audio' | 'image';
 
 // ─── Estado de conversión de un archivo ──────────────────────────────────
 export type FileStatus =
@@ -47,6 +47,16 @@ export interface ConversionFile {
   progress: number;
   errorMessage?: string;
   markdownContent?: string;
+  warnings?: ConversionWarning[];
+}
+
+// ─── Aviso no fatal de una conversión (OCR) ────────────────────────────────
+// El texto ya llega localizado desde el sidecar (según `lang` del comando).
+export interface ConversionWarning {
+  page: number | null;
+  stage: string;
+  code: string;
+  message: string;
 }
 
 // ─── Eventos Tauri → Frontend ─────────────────────────────────────────────
@@ -56,6 +66,7 @@ export interface ConversionProgressEvent {
   progress: number;
   errorMessage?: string;
   markdownContent?: string;
+  warnings?: ConversionWarning[];
 }
 
 export interface ModelDownloadProgressEvent {
@@ -103,9 +114,16 @@ export const AUDIO_EXTENSIONS = [
 
 export type AudioExtension = typeof AUDIO_EXTENSIONS[number];
 
+export const IMAGE_EXTENSIONS = [
+  'png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff'
+] as const;
+
+export type ImageExtension = typeof IMAGE_EXTENSIONS[number];
+
 export const SUPPORTED_EXTENSIONS = [
   ...DOCUMENT_EXTENSIONS,
   ...AUDIO_EXTENSIONS,
+  ...IMAGE_EXTENSIONS,
 ] as const;
 
 export type SupportedExtension = typeof SUPPORTED_EXTENSIONS[number];
@@ -148,4 +166,12 @@ export const FILE_ICON_MAP: Record<SupportedExtension, {
   // Video
   mp4:  { icon: 'Video',        colorClass: 'text-indigo-500' },
   webm: { icon: 'Video',        colorClass: 'text-indigo-500' },
+  // Imágenes (OCR)
+  png:  { icon: 'Image',        colorClass: 'text-pink-500'   },
+  jpg:  { icon: 'Image',        colorClass: 'text-pink-500'   },
+  jpeg: { icon: 'Image',        colorClass: 'text-pink-500'   },
+  webp: { icon: 'Image',        colorClass: 'text-pink-500'   },
+  bmp:  { icon: 'Image',        colorClass: 'text-pink-500'   },
+  tif:  { icon: 'Image',        colorClass: 'text-pink-500'   },
+  tiff: { icon: 'Image',        colorClass: 'text-pink-500'   },
 };

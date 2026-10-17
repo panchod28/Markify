@@ -1,5 +1,6 @@
 import { FileIcon } from '@/components/files/FileIcon';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import type { ConversionFile } from '@/types';
 
 interface ResultFileItemProps {
@@ -20,7 +21,12 @@ function smartTruncate(name: string, maxLength: number = 22): string {
 }
 
 export function ResultFileItem({ file, isSelected, onClick }: ResultFileItemProps) {
+  const { t } = useTranslation();
   const isClickable = file.status === 'completed';
+  const warnings = file.status === 'completed' ? file.warnings ?? [] : [];
+  const warningsTitle = warnings.length
+    ? [t('results.warningsTitle'), ...warnings.map(w => `• ${w.message}`)].join('\n')
+    : undefined;
   const displayName = smartTruncate(file.originalName, 22);
   const showTooltip = file.originalName.length > 22;
 
@@ -49,7 +55,16 @@ export function ResultFileItem({ file, isSelected, onClick }: ResultFileItemProp
       </div>
 
       <div className="flex-shrink-0 ml-1">
-        {file.status === 'completed' && <CheckCircle size={16} className="text-success" />}
+        {file.status === 'completed' && (
+          <span className="inline-flex items-center gap-1">
+            {warningsTitle && (
+              <span title={warningsTitle} aria-label={warningsTitle}>
+                <AlertTriangle size={14} className="text-text-tertiary" />
+              </span>
+            )}
+            <CheckCircle size={16} className="text-success" />
+          </span>
+        )}
         {file.status === 'error' && <XCircle size={16} className="text-error" />}
       </div>
     </div>

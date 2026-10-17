@@ -28,10 +28,10 @@
 - [x] 2.8 Script de obtención de modelos con versión + SHA-256 fijados; `build.py`: `--add-data`, `--collect-all rapidocr`, binarios de onnxruntime/cv2; importación OCR perezosa
 - [x] 2.9 `requirements.txt` completo y acotado; `release.yml` instala desde él; añadir job/paso de `pytest` (incluye `-m ocr`) en macOS y Windows
 - [x] 2.10 *Smoke test* del binario empaquetado: `smoke_test.py` convierte la imagen `tests/fixtures/ocr_hello.png` por stdin y verifica el texto (pasa en macOS, 2 imágenes en 3.6 s en total, arranque posterior 2.0 s). El paso de CI ya lo ejecuta; **el control de tamaño en CI queda pendiente** (medido local: 954 MB frente a 850 MB sin OCR, +104 MB)
-- [ ] 2.11 Frontend: `FileCategory 'image'`, `IMAGE_EXTENSIONS`, `getFileCategory`, `FILE_ICON_MAP`/`FileIcon` (icono lucide) + tests vitest de categorías y extensiones existentes sin cambio
-- [ ] 2.12 Frontend: tipos `ConversionWarning`, `warnings?` en evento y archivo, copia en `_handleFileUpdate`; i18n ES/EN de errores nuevos
-- [ ] 2.13 Indicador de avisos (icono + `Tooltip`) en la fila de resultados con tokens existentes; revisión visual en claro/oscuro
-- [ ] 2.14 Verificación manual en Mac y Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; confirmar no regresión de PDF/DOCX/audio
+- [x] 2.11 Frontend: `FileCategory 'image'`, `IMAGE_EXTENSIONS`, `getFileCategory`, `FILE_ICON_MAP`/`FileIcon` (icono lucide) + tests vitest de categorías y extensiones existentes sin cambio
+- [x] 2.12 Frontend: tipos `ConversionWarning`, `warnings?` en evento y archivo, copia en `_handleFileUpdate`; i18n ES/EN de errores nuevos
+- [x] 2.13 Indicador de avisos (icono + `Tooltip`) en la fila de resultados con tokens existentes; revisión visual en claro/oscuro
+- [ ] 2.14 Verificación manual en Mac y Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; confirmar no regresión de PDF/DOCX/audio. *Hecho en macOS desde la UI (`.app` con el sidecar nuevo): 6 imágenes (PNG/JPG/TIFF) → 4 convertidas (texto en español con acentos, ñ, ¿ ¡ correcto; TIFF de 3 fotogramas con icono de aviso y tooltip "Completado con avisos · Solo se procesó el primer fotograma (2 omitidos)") y 2 errores con mensaje claro (imagen corrupta, sin texto); el smoke test del sidecar sigue pasando para CSV. **Falta**: Windows, red desconectada real a nivel de sistema, y repetir PDF/DOCX/audio desde la UI tras este change*
 - [ ] 2.15 Release interno de Fase 1
 
 ## 3. Fase 2 — PDFs escaneados y ruta híbrida (liberable)

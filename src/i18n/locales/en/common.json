@@ -4,8 +4,8 @@
   },
   "dropzone": {
     "title": "Drop your files here",
-    "subtitle": "Documents, audio and video — conversion to Markdown",
-    "supported": "PDF, DOCX, XLSX, PPTX, HTML, CSV, MP3, MP4, WAV and more",
+    "subtitle": "Documents, images, audio and video — conversion to Markdown",
+    "supported": "PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG, MP3, MP4, WAV and more",
     "dragActive": "Drop the files here",
     "dragActiveCompact": "Drop here",
     "dialogFilter": "Supported files"
@@ -46,7 +46,8 @@
     "openInFolder": "Show in folder",
     "savedAt": "Saved at:",
     "allFailedTitle": "Could not convert any file",
-    "allFailedDescription": "Check the errors in the list."
+    "allFailedDescription": "Check the errors in the list.",
+    "warningsTitle": "Completed with warnings"
   },
   "preview": {
     "selectFile": "Select a file from the list to view its content",

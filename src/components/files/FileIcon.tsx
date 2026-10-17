@@ -1,4 +1,4 @@
-import { FileText, FileCode, Sheet, Presentation, Music, Video } from 'lucide-react';
+import { FileText, FileCode, Sheet, Presentation, Music, Video, Image as ImageIcon } from 'lucide-react';
 import { FILE_ICON_MAP } from '@/types';
 import type { SupportedExtension } from '@/types';
 
@@ -15,6 +15,7 @@ const ICON_COMPONENTS: Record<string, React.ComponentType<{ size?: number; class
   Presentation,
   Music,
   Video,
+  Image: ImageIcon,
 };
 
 export function FileIcon({ extension, size = 24, className = '' }: FileIconProps) {

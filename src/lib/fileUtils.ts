@@ -1,4 +1,4 @@
-import { DOCUMENT_EXTENSIONS, AUDIO_EXTENSIONS, SUPPORTED_EXTENSIONS } from '@/types';
+import { DOCUMENT_EXTENSIONS, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, SUPPORTED_EXTENSIONS } from '@/types';
 import type { FileCategory, SupportedExtension } from '@/types';
 
 export function getExtension(filename: string): string {
@@ -12,5 +12,6 @@ export function isSupportedExtension(ext: string): ext is SupportedExtension {
 export function getFileCategory(ext: string): FileCategory | null {
   if ((DOCUMENT_EXTENSIONS as readonly string[]).includes(ext)) return 'document';
   if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) return 'audio';
+  if ((IMAGE_EXTENSIONS as readonly string[]).includes(ext)) return 'image';
   return null;
 }

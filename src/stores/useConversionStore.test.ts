@@ -49,3 +49,18 @@ describe('useConversionStore.resetToEmpty', () => {
     expect(s.files).toEqual([]);
   });
 });
+
+describe('useConversionStore._handleFileUpdate', () => {
+  it('copies the optional warnings of a completed file and leaves files without them untouched', () => {
+    const base = { ...file, status: 'processing' as const, progress: 0 };
+    useConversionStore.setState({ files: [base, { ...base, id: '2' }] });
+    const warnings = [{ page: null, stage: 'layout', code: 'low_confidence_dropped', message: 'Se omitieron 6 líneas' }];
+    useConversionStore.getState()._handleFileUpdate({
+      fileId: '1', status: 'completed', progress: 100, markdownContent: 'texto', warnings,
+    });
+    const [a, b] = useConversionStore.getState().files;
+    expect(a.warnings).toEqual(warnings);
+    expect(a.status).toBe('completed');
+    expect(b.warnings).toBeUndefined();
+  });
+});

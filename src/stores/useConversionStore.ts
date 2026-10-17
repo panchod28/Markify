@@ -254,6 +254,7 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
         progress: 0,
         errorMessage: undefined,
         markdownContent: undefined,
+        warnings: undefined,
       })),
     }));
 
@@ -282,7 +283,7 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
       isCancelling: false,
       files: state.files.map(f =>
         f.status === 'error'
-          ? { ...f, status: 'pending' as const, progress: 0, errorMessage: undefined }
+          ? { ...f, status: 'pending' as const, progress: 0, errorMessage: undefined, warnings: undefined }
           : f
       ),
     }));
@@ -322,6 +323,7 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
               progress: event.progress,
               errorMessage: event.errorMessage,
               markdownContent: event.markdownContent,
+              warnings: event.warnings,
             }
           : f
       ),
