@@ -9,12 +9,14 @@
 - [ ] 1.3b Repetir en Windows (runner CI o VM)
 - [x] 1.4 Confirmar que `pypdfium2` llega como dependencia de `markitdown[pdf]`/`pdfplumber` y que el venv de CI lo incluye
 - [x] 1.5a Prototipo PyInstaller OCR-only en mac arm64 (onefile y onedir): OCR offline OK, tamaños y arranque medidos
-- [ ] 1.5b Prototipo con el sidecar completo (markitdown + whisper + magika + OCR) en mac arm64 y Windows (CI temporal)
+- [x] 1.5b Prototipo con el sidecar completo (markitdown + whisper + magika + OCR) en mac arm64. *Es el `build.py` actual: 954 MB en disco, smoke test OK (arranque posterior 1.3–2.1 s), PDF/DOCX/audio/imagen convertidos desde la `.app`.*
+- [ ] 1.5c Lo mismo en Windows (job `OCR check (manual)` de GitHub Actions, que además imprime el tamaño)
 - [x] 1.6 Calibrar umbrales de `classify_page` (`MIN_TEXT_CHARS`, `SCAN_COVERAGE`, `IMAGE_MIN_AREA`) y `MIN_CONFIDENCE` sobre el corpus
 - [x] 1.7a Informe parcial y `design.md` actualizado con cifras reales (sección "Resultados del spike")
 - [x] 1.7b Decisión sobre `--onedir`: change aparte `sidecar-onedir` (prerrequisito de la Fase 1)
 - [ ] 1.7c Cierre del go/no-go tras Windows y tras integrar `sidecar-onedir`
-- [ ] 1.8 Validar calidad con 5–10 escaneos/fotos reales ES/EN (el corpus del spike es sintético) y ordenación de 2 columnas
+- [x] 1.8a Calidad sobre texto real: páginas de un documento real (licencia de 310 páginas con tipografía de ~9 pt, EN y ES) renderizadas a 200 DPI y degradadas como escáner (giro 0.6°, ruido, JPEG q45) y como foto (55 % de resolución, desenfoque, JPEG q30). CER: escáner 0.07–0.09 %, foto 0.46–0.56 %, sin avisos. Páginas densas: 3–4 s/página (por encima del objetivo de ~3 s; las de poco texto van a ~0.3 s). Dos columnas justificadas con título y pie (2 págs): CER del flujo 0.01 % **tras corregir `layout.py`**, que antes mezclaba las columnas (medianil de ~40 px y 2 líneas puente).
+- [ ] 1.8b Validar con 5–10 escaneos o fotos **físicos** (escáner/cámara) ES/EN. Necesita muestras reales del usuario; no depende de Windows
 
 ## 2. Fase 1 — Núcleo OCR e imágenes (liberable)
 
@@ -31,7 +33,8 @@
 - [x] 2.11 Frontend: `FileCategory 'image'`, `IMAGE_EXTENSIONS`, `getFileCategory`, `FILE_ICON_MAP`/`FileIcon` (icono lucide) + tests vitest de categorías y extensiones existentes sin cambio
 - [x] 2.12 Frontend: tipos `ConversionWarning`, `warnings?` en evento y archivo, copia en `_handleFileUpdate`; i18n ES/EN de errores nuevos
 - [x] 2.13 Indicador de avisos (icono + `Tooltip`) en la fila de resultados con tokens existentes; revisión visual en claro/oscuro
-- [ ] 2.14 Verificación manual en Mac y Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; confirmar no regresión de PDF/DOCX/audio. *Hecho en macOS desde la UI (`.app` con el sidecar nuevo): 6 imágenes (PNG/JPG/TIFF) → 4 convertidas (texto en español con acentos, ñ, ¿ ¡ correcto; TIFF de 3 fotogramas con icono de aviso y tooltip "Completado con avisos · Solo se procesó el primer fotograma (2 omitidos)") y 2 errores con mensaje claro (imagen corrupta, sin texto); el smoke test del sidecar sigue pasando para CSV. **Falta**: Windows, red desconectada real a nivel de sistema, y repetir PDF/DOCX/audio desde la UI tras este change*
+- [x] 2.14a Verificación manual en macOS desde la UI (`.app` con el sidecar nuevo): PNG/JPG/TIFF ES y EN, PDF, DOCX y audio (descarga del modelo Whisper desde su modal y transcripción) convertidos; sin red a nivel de SO (`sandbox-exec` con `deny network*`: imagen, PDF escaneado y mixto OK en 2.6 s); lote con ruta con acentos, ñ y espacios. *El 1.er arranque del binario nuevo tarda ~35 s (verificación del SO).*
+- [ ] 2.14b Lo mismo en Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; PDF/DOCX/audio sin regresión
 - [ ] 2.15 Release interno de Fase 1
 
 ## 3. Fase 2 — PDFs escaneados y ruta híbrida (liberable)
@@ -46,7 +49,8 @@
 - [x] 3.8 Tests con motor *fake*: mezcla de clases, página que explota, todas explotan, cancelación a mitad, progreso, PDF vacío/0 páginas, cifrado *`test_ocr_page_classifier.py` + `test_ocr_pdf_pipeline.py` (motor falso): mezcla, página que explota, página ilegible, todas fallan, sin texto, cancelación a mitad y previa, progreso, cifrado, truncado, 0 páginas. Fixtures generados por `make_fixtures.py` (nada binario commiteado).*
 - [x] 3.9 Tests OCR reales (`-m ocr`) sobre escaneados ES/EN con umbral de CER *Dentro de `test_ocr_pdf_pipeline.py` (`-m ocr`): CER 0.0 % (umbral 5 %) en ES y EN.*
 - [x] 3.10 Prueba de memoria/tiempo con PDF escaneado sintético de ≥ 200 páginas; ampliar el smoke test del binario con un PDF escaneado *`tests/stress_pdf_memory.py`, 200 páginas: 72 s (0.36 s/pág), RSS plano (1er cuarto 1 881 MB → último 1 645 MB) y pico de 1.88 GB (> 1.5 GB) que se corrigió en 4.7 (ver allí: 1.1 GB). Smoke test del binario con PDF escaneado de 2 páginas: OK (arranque posterior 2.1 s).*
-- [x] 3.11 Verificación manual Mac + Windows: escaneado, mixto, cifrado, ruta con acentos y espacios; sin regresión de PDFs de texto *Hecho en macOS desde la UI (`.app` reconstruida con el sidecar nuevo, 7 PDFs en una carpeta con acentos, ñ y espacios): escaneado ES (tildes, ñ, ¿ ¡ correctos), escaneado girado 180°, dos columnas (columna a columna, pie al final), texto + figura (OCR tras el texto nativo), texto + página escaneada (en orden) y PDF de solo texto convertidos sin avisos; el cifrado da el mensaje "El archivo está protegido con contraseña" y no afecta al resto del lote. **Falta**: Windows y escaneos reales.*
+- [x] 3.11 Verificación manual en macOS (escaneado, mixto, cifrado, ruta con acentos y espacios, sin regresión de PDFs de texto): ver 4.8a.
+- [ ] 3.11b Verificación manual en Windows (mismos casos, ruta con acentos y espacios)
 - [ ] 3.12 Release interno de Fase 2
 
 ## 4. Fase 3 — Mixtos, rotación, baja calidad y endurecimiento
@@ -58,12 +62,13 @@
 - [x] 4.5 Baja calidad: ampliación de imágenes pequeñas y umbral de confianza; verificar que nunca se emite texto bajo el umbral y que el warning agregado aparece *Medido: ampliar imágenes pequeñas (×2, ×3, hasta 1800 px) no mejora y a veces empeora el CER (ruido + JPEG q20 + fuentes de 12–18 px: 0.0–1.3 % sin ampliar) → no se implementa. El umbral de confianza y el aviso agregado ya están cubiertos por tests (imagen y PDF: nunca se emite texto bajo `MIN_CONFIDENCE`).*
 - [x] 4.6 Revisión de errores de extremo a extremo: toda ruta de fallo tiene `code`, `stage`, archivo/página en log y mensaje ES/EN *`test_error_codes.py`: todo `ConversionError("code")` y `PageIssue("code")` del paquete OCR tiene mensaje/plantilla ES y EN; cada fallo de página se registra con archivo/página/etapa/código + traceback en stderr.*
 - [x] 4.7 Ajuste final de rendimiento (hilos de ONNX, DPI) con las cifras del corpus; actualizar presupuesto si cambia *Causa del pico: `Det.limit_type=min/736` dejaba la página A4 a 150 DPI entera en el detector. Con `max/1280`: RSS pico 1 105 MB (antes 1 883), 0.31 s/pág (antes 0.36), CER sin cambio en texto de 7–10 pt (0.4–0.7 %); con 960 baja a 644 MB, pero se deja 1280 por margen con escaneos reales. Windows sin medir.*
-- [ ] 4.8 Verificación manual completa Mac + Windows con el corpus entero; checklist de no regresión (documentos, audio/Whisper, cancelación, tema, idioma) *macOS: cubierto por la verificación de 3.11 (mixto, rotación, columnas, cifrado, lote con ruta con acentos). **Falta**: Windows, corpus real y los puntos de audio/Whisper, cancelación, tema e idioma del checklist.*
+- [x] 4.8a Verificación manual completa en macOS: escaneado/girado/mixto/figura/dos columnas/cifrado/página ilegible (marcador + icono de aviso), PDF largo con cancelación a mitad (vuelve a la lista, sidecar inactivo 0 % CPU y re-uso OK), DOCX, audio (Whisper), cambio de tema e idioma y persistencia tras reiniciar la app. *Pendiente solo cosmético: el comentario `<!-- Markify: página N … -->` se ve como texto en la vista previa renderizada.*
+- [ ] 4.8b Verificación manual completa en Windows con el corpus entero y el mismo checklist
 
 ## 5. Fase 4 — Documentación y cierre
 
 - [x] 5.1 Actualizar `README.md` (formatos, OCR local, tamaño) y `CONTRIBUTING.md` (tests OCR, obtención de modelos, smoke test) *README (formatos, OCR, límites, estructura, build) y CONTRIBUTING (tests con OCR, `fetch_ocr_models.py`, stress y smoke, ajustes). El CI de tests ahora instala también `reportlab` (los fixtures lo necesitan).*
 - [x] 5.2 Actualizar specs planos: `01-types` (image), `05-sidecar-protocol` (ocr/, `warnings`), `10-build` (modelos, CI); `08-i18n` si aplica *`01-types` (image, `ConversionWarning`, extensiones, icono), `05-sidecar-protocol` (progreso por página, `warnings`, §14 OCR/PDF/errores), `08-i18n` (claves nuevas ES/EN; también añadidas a `messages.json` las de PDF), `10-build` (modelos, flags, CI, tamaño, checklist).*
-- [x] 5.3 Incluir avisos de licencia de RapidOCR/PP-OCR/ONNX/OpenCV/pypdfium2 en el instalador *`THIRD_PARTY_NOTICES.md` con RapidOCR, modelos PP-OCRv5, ONNX Runtime, OpenCV, pypdfium2/PDFium, pdfminer.six, Shapely/pyclipper y Pillow; incluido en `Resources/` de la `.app` (verificado) y en `tauri.windows.conf.json` (sin verificar). **Falta** revisión legal de si basta la lista o hay que incluir los textos completos (Apache-2.0 pide copia de la licencia y NOTICE).*
+- [x] 5.3 Incluir avisos de licencia de RapidOCR/PP-OCR/ONNX/OpenCV/pypdfium2 en el instalador *`THIRD_PARTY_NOTICES.md` con RapidOCR, modelos PP-OCRv5, ONNX Runtime, OpenCV, pypdfium2/PDFium, pdfminer.six, Shapely/pyclipper y Pillow; incluido en `Resources/` de la `.app` (verificado) y en `tauri.windows.conf.json` (sin verificar). Los textos completos (LICENSE/NOTICE de cada paquete) van en `THIRD_PARTY_LICENSES.txt`, generado con `sidecar/gen_licenses.py` y también incluido en ambos instaladores (verificado en la `.app`). Una revisión legal humana sigue siendo recomendable, no bloqueante.*
 - [x] 5.4 Anotar en CONTRIBUTING los riesgos preexistentes detectados (`--onefile`, ruta del modelo Whisper en *frozen*) como issues separados *Sección "Known risks" en CONTRIBUTING: ruta del modelo Whisper en frozen, 1.er arranque lento, sin timeout por página, tablas de pdfplumber en PDFs mixtos, RAM en Windows sin medir. `--onefile` ya no aplica tras `sidecar-onedir`. **Falta** abrirlos como issues en GitHub.*
 - [ ] 5.5 `openspec validate add-ocr-image-pdf-support --strict` y archivar el change *`validate --strict` pasa; el archivado queda pendiente hasta cerrar las tareas abiertas (2.14, 2.15, 1.3b, 1.5b, 1.7c, 1.8, 3.12, 4.8).*

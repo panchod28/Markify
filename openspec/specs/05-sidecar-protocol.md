@@ -814,7 +814,7 @@ PyInstaller==6.8.0
 
 ### 14.4 Layout (`ocr/layout.py::lines_to_markdown`)
 
-Filtra por `MIN_CONFIDENCE=0.5` (devuelve cuántas líneas descartó; se avisa **una vez por archivo** con `low_confidence_dropped`), detecta columnas por huecos en la proyección horizontal (tolera una línea puente: título o pie centrado, que se coloca antes/después de las columnas), ordena de arriba abajo y une líneas en párrafos. No infiere encabezados, tablas ni listas.
+Filtra por `MIN_CONFIDENCE=0.5` (devuelve cuántas líneas descartó; se avisa **una vez por archivo** con `low_confidence_dropped`), detecta columnas por huecos en la proyección horizontal (hueco mínimo = 1.0 × la altura mediana de caja, porque las cajas del detector vienen infladas; tolera hasta ~5 % de líneas puente —título, encabezado o pie centrados— que se colocan antes/después de las columnas), ordena de arriba abajo y une líneas en párrafos. No infiere encabezados, tablas ni listas.
 
 ### 14.5 Errores y diagnóstico (`ocr/diagnostics.py`)
 
