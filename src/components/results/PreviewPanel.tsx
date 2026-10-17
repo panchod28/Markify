@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { toRenderedMarkdown } from '@/lib/markdownPreview';
 import { FileText, FileX } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { PreviewViewMode } from '@/types';
@@ -76,7 +77,7 @@ export function PreviewPanel({ content, viewMode, onToggleViewMode, allFailed = 
         )}
         {viewMode === 'rendered' ? (
           <div className="markdown-preview">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent!}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{toRenderedMarkdown(displayContent!)}</ReactMarkdown>
           </div>
         ) : (
           <pre className="text-sm font-mono text-text-primary whitespace-pre-wrap">

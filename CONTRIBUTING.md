@@ -331,7 +331,7 @@ Found while adding OCR; not fixed there on purpose:
 - **First launch after install is slow** (30–50 s on macOS) because the OS verifies the new files once; the UI gives no hint during that wait.
 - **No per-page timeout in OCR**: ONNX Runtime inference cannot be interrupted, so cancelling takes effect between pages, not inside one.
 - **Mixed PDFs lose pdfplumber tables**: once a PDF has any scanned or mixed page, native-text pages are extracted with pdfminer per page, so table detection is lost on them. All-text PDFs are unchanged.
-- **Whisper picks the language automatically**: a short Spanish clip was transcribed as English gibberish (`base` model). `whisper_handler.py` does not pass a language; a language option or a larger model would help.
+- **Whisper picks the audio language automatically** (`language=None`). It works with natural voices (Spanish clips from Mónica/Paulina were detected as `es` with probability 1.0); a robotic novelty voice (macOS "Eddy") was misdetected and garbled even when forcing `es`, so that was the audio, not the app. If users report misdetections, add an "audio language" option (Auto / Español / English) passed as `language=` to `model.transcribe`.
 - **Images in Office files**: crops and rotations applied inside the document are ignored, DOCX headers/footers are not extracted, text of fewer than 6 letters/digits inside an image is dropped, and the alt text of small images is ignored on purpose (in a real deck it was stock-icon titles copied from the web).
 - **OCR memory on Windows is unmeasured**; the ≤ 1.5 GB budget was measured on Apple Silicon only.
 
@@ -360,6 +360,12 @@ Found while adding OCR; not fixed there on purpose:
 ---
 
 ## Releasing
+
+Before tagging a release, regenerate the third-party license texts in the build environment (they list the packages installed there) and check there is no unreviewed copyleft:
+
+```bash
+sidecar/.venv/bin/python scripts/gen_licenses.py --check
+```
 
 Releases are automated via GitHub Actions (`.github/workflows/release.yml`). Pushing a tag matching `v*` triggers the build pipeline:
 
