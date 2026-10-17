@@ -2,20 +2,20 @@
 
 ## 1. Despacho y `check_model` (corrige el modal permanente)
 
-- [ ] 1.1 `protocol.write_message`: `threading.Lock` alrededor de `write` + `flush`; test de 8 hilos × 200 mensajes
-- [ ] 1.2 Crear `sidecar/dispatcher.py`: hilo lector, `queue.Queue`, atención inmediata de `cancel` y `check_model`, encolado de `convert`/`download_model`, `clear()` del flag al encolar `convert`, centinela en EOF, `try/except` por comando con log a stderr
-- [ ] 1.3 `main.py`: conectar handlers reales al dispatcher (el trabajador es el hilo principal); `model_status` con `request_id`; sin cambios en `handle_convert` salvo lo imprescindible
-- [ ] 1.4 `tests/test_dispatcher.py` con handlers falsos: cancel durante convert, check_model durante convert, convert+cancel inmediato, cancel ocioso, EOF, handler que lanza excepción
-- [ ] 1.5 `smoke_test.py`: enviar `check_model` con `id` y verificar `request_id`
-- [ ] 1.6 Verificar en macOS (sidecar compilado): `check_model` mientras corre una conversión larga responde al instante con `request_id`
+- [x] 1.1 `protocol.write_message`: `threading.Lock` alrededor de `write` + `flush`; test de 8 hilos × 200 mensajes
+- [x] 1.2 Crear `sidecar/dispatcher.py`: hilo lector, `queue.Queue`, atención inmediata de `cancel` y `check_model`, encolado de `convert`/`download_model`, `clear()` del flag al encolar `convert`, centinela en EOF, `try/except` por comando con log a stderr
+- [x] 1.3 `main.py`: conectar handlers reales al dispatcher (el trabajador es el hilo principal); `model_status` con `request_id`; sin cambios en `handle_convert` salvo lo imprescindible
+- [x] 1.4 `tests/test_dispatcher.py` con handlers falsos: cancel durante convert, check_model durante convert, convert+cancel inmediato, cancel ocioso, EOF, handler que lanza excepción
+- [x] 1.5 `smoke_test.py`: enviar `check_model` con `id` y verificar `request_id`
+- [x] 1.6 Verificado en macOS (sidecar compilado, modelo `base`, audio de 113 s): `check_model` durante la transcripción responde en 0.00 s con `request_id` y `available=true`
 
 ## 2. Whisper cancelable con progreso real
 
-- [ ] 2.1 `whisper_handler.py`: shim `tqdm` (context manager con `update`) que consulta `cancel_flag`, lanza `TranscriptionCancelled` y emite `file_progress` (0–99, solo si cambia el entero); aplicar y restaurar en `try/finally` alrededor de `model.transcribe`
+- [ ] 2.1 `whisper_handler.py`: llamar a `transcribe(..., verbose=None)` (con `verbose=False` Whisper imprime "Detected language: …" en **stdout**, línea que no es JSON y viola el protocolo; no redirigir `sys.stdout` porque el lector escribe a la vez) y shim `tqdm` (context manager con `update`) que consulta `cancel_flag`, lanza `TranscriptionCancelled` y emite `file_progress` (0–99, solo si cambia el entero); aplicar y restaurar en `try/finally` alrededor de `model.transcribe`
 - [ ] 2.2 Captura de `TranscriptionCancelled` en `transcribe_audio` → devuelve `""`; confirmar que `handle_convert` emite `conversion_cancelled` y no `file_result`
 - [ ] 2.3 Degradación: sin `whisper.transcribe.tqdm` → aviso en stderr y comportamiento previo
 - [ ] 2.4 `requirements.txt`: fijar `openai-whisper==20250625` (ver Open Question 1)
-- [ ] 2.5 `tests/test_whisper_progress.py`: progreso monótono ≤ 99, cancelación, restauración del atributo, existencia de `whisper.transcribe.tqdm`
+- [ ] 2.5 `tests/test_whisper_progress.py`: progreso monótono ≤ 99, sin texto no-JSON en stdout, cancelación, restauración del atributo, existencia de `whisper.transcribe.tqdm`
 - [ ] 2.6 Prueba manual con modelo `base`: audio de 113 s → progreso creciente real; cancelar a los ~10 s → `conversion_cancelled` en segundos
 
 ## 3. Frontend

@@ -25,3 +25,24 @@ def test_read_message():
     with patch("sys.stdin", io.StringIO(fake_input)):
         msg = read_message()
     assert msg["command"] == "convert"
+
+
+def test_write_message_is_thread_safe():
+    """Varios hilos escribiendo a la vez: cada línea es un JSON completo."""
+    import threading
+
+    fake_stdout = io.StringIO()
+    n_threads, n_msgs = 8, 200
+
+    def writer(tid):
+        for i in range(n_msgs):
+            write_message({"type": "t", "thread": tid, "i": i, "pad": "x" * 200})
+
+    with patch("sys.stdout", fake_stdout):
+        threads = [threading.Thread(target=writer, args=(t,)) for t in range(n_threads)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+
+    lines = fake_stdout.getvalue().splitlines()
+    assert len(lines) == n_threads * n_msgs
+    assert all(json.loads(line)["type"] == "t" for line in lines)

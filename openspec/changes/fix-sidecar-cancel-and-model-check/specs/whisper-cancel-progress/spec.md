@@ -42,3 +42,10 @@ Si el punto de enganche de Whisper no existe en la versión instalada, el sideca
 #### Scenario: Actualización de dependencias
 - **WHEN** se instala una versión de Whisper sin `whisper.transcribe.tqdm`
 - **THEN** la prueba de enganche falla en CI antes de publicar
+
+### Requirement: Stdout solo con mensajes del protocolo durante la transcripción
+Mientras transcribe, el sidecar SHALL NOT escribir en stdout nada que no sea un mensaje JSON del protocolo (por ejemplo, el aviso de idioma detectado de Whisper).
+
+#### Scenario: Transcripción de un audio en español
+- **WHEN** se transcribe un audio y se captura stdout
+- **THEN** todas las líneas son JSON válido y no aparece `Detected language`

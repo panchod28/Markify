@@ -21,13 +21,13 @@ if sys.platform == 'darwin':
             _path = _p + ':' + _path
     os.environ['PATH'] = _path
 
-import json
 import threading
 import traceback
-from protocol import read_message, write_message
+from protocol import write_message
+from dispatcher import run
 from converter import convert_document
 from whisper_handler import transcribe_audio
-from model_manager import model_exists, download_model, get_model_path
+from model_manager import model_exists, download_model
 from error_messages import get_error_message
 
 
@@ -35,43 +35,15 @@ _cancel_flag = threading.Event()
 
 
 def main():
-    """Loop principal: leer stdin y despachar comandos."""
-    while True:
-        try:
-            msg = read_message()
-        except EOFError:
-            break
-        except json.JSONDecodeError as e:
-            print(f"[Sidecar] JSON inválido recibido: {e}", file=sys.stderr)
-            continue
-        except Exception as e:
-            print(f"[Sidecar] Error inesperado leyendo mensaje: {e}", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            continue
-
-        command = msg.get("command")
-
-        try:
-            if command == "convert":
-                _cancel_flag.clear()
-                handle_convert(msg["payload"])
-
-            elif command == "cancel":
-                _cancel_flag.set()
-
-            elif command == "check_model":
-                available = model_exists()
-                write_message({"type": "model_status", "payload": {"available": available}})
-
-            elif command == "download_model":
-                handle_download_model()
-
-            else:
-                print(f"[Sidecar] Comando desconocido: {command}", file=sys.stderr)
-
-        except Exception as e:
-            print(f"[Sidecar] Error procesando comando '{command}': {e}", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
+    """Conecta los handlers al despachador (lector de stdin + trabajador)."""
+    run(
+        handlers={
+            "convert": handle_convert,
+            "download_model": lambda _payload: handle_download_model(),
+        },
+        cancel_flag=_cancel_flag,
+        model_available=model_exists,
+    )
 
 
 def handle_convert(payload: dict):

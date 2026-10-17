@@ -42,7 +42,10 @@ def run_sidecar(exe: Path, messages: list[dict], timeout: int) -> tuple[list[dic
 
 def check_model(exe: Path, timeout: int) -> float:
     out, elapsed = run_sidecar(exe, [{"id": "smoke", "command": "check_model", "payload": {}}], timeout)
-    assert any(m.get("type") == "model_status" for m in out), f"sin model_status: {out}"
+    status = next((m for m in out if m.get("type") == "model_status"), None)
+    assert status, f"sin model_status: {out}"
+    # Rust solo resuelve check_whisper_model si el mensaje trae el id de la petición.
+    assert status.get("request_id") == "smoke", f"model_status sin request_id: {status}"
     return elapsed
 
 

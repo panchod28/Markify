@@ -5,6 +5,10 @@ Lectura y escritura de mensajes JSON newline-delimited en stdin/stdout.
 
 import sys
 import json
+import threading
+
+# El lector (check_model) y el trabajador (progreso/resultados) escriben a la vez.
+_write_lock = threading.Lock()
 
 
 def read_message() -> dict:
@@ -24,6 +28,9 @@ def write_message(message: dict) -> None:
     """
     Serializa un dict a JSON y lo escribe en stdout con \n.
     Hace flush inmediato — crítico para que Tauri reciba el mensaje.
+    Seguro entre hilos: cada mensaje sale completo en su propia línea.
     """
-    sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    line = json.dumps(message, ensure_ascii=False) + "\n"
+    with _write_lock:
+        sys.stdout.write(line)
+        sys.stdout.flush()
