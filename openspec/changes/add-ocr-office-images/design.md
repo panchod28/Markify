@@ -47,17 +47,19 @@ Las imágenes sin texto ni alt desaparecen (no queda un cuadro vacío). Una form
 
 *Descartado*: (a) post-procesar la salida y quitar los `![..](X.jpg)` con una expresión regular, que acopla a un formato interno y obliga a emparejar cada enlace con su imagen; (b) reescribir el recorrido de formas, que duplica markitdown y arriesga regresiones en PPTX sin imágenes; (c) el gancho `llm_client`, que aplana el texto en una línea dentro del alt.
 
-### D4. Qué imágenes se leen
+### D4. Qué imágenes se leen (calibrado en la Fase 0)
 
-- **PPTX**: área de la forma ≥ `IMAGE_MIN_AREA` (5 %, la misma constante que en PDF) de la diapositiva. En un PPTX real de 19 diapositivas había 28 imágenes y solo 1 pasaba el 5 %: el filtro evita 27 inferencias inútiles.
-- **DOCX**: mammoth no da el tamaño en pantalla, así que se filtra por píxeles de la imagen (`OFFICE_MIN_SIDE_PX` y `OFFICE_MIN_PIXELS`, valores iniciales por calibrar en el spike con un corpus de capturas, logos y banners).
-- Se deduplican imágenes idénticas (hash de los bytes): el mismo logotipo repetido no se lee varias veces.
-- Imágenes que Pillow no abre (EMF, WMF, SVG sin respaldo): no se leen y cuentan en un único aviso `images_skipped`. En PPTX `shape.image` ya devuelve el PNG de respaldo de un SVG.
-- El alt text se conserva **siempre que sea una descripción real**, también en imágenes pequeñas, y se descarta si coincide con el nombre de la forma, parece un nombre de archivo (`.png`, `.jpg`…) o es un nombre automático del tipo "Picture 3"/"Imagen 3".
+Tres filtros encadenados; la calibración mostró que el tiempo no es el problema (leer las 28 imágenes de un deck real cuesta 1.2 s) sino el **texto basura** que producen iconos y pictogramas (1–5 caracteres, a veces con confianza 1.0).
+
+1. **Tamaño mostrado ≥ `OFFICE_MIN_AREA` (1 %)** de la página o diapositiva. PPTX: área de la forma. DOCX: mammoth no da el tamaño en pantalla, así que se lee de `document.xml` (`wp:extent` de cada `wp:inline`/`wp:anchor`, emparejado con la imagen por el SHA-1 de sus bytes; si la misma imagen se usa a varios tamaños vale el mayor) y el área de página de `w:pgSz` (Carta si falta). Si el tamaño no se puede determinar (VML, formas flotantes raras) se usa un respaldo en píxeles: ambos lados ≥ `OFFICE_FALLBACK_MIN_SIDE_PX` (100) y área ≥ `OFFICE_FALLBACK_MIN_PIXELS` (20 000).
+2. **Duplicadas** (mismo SHA-1): se leen una vez; el texto se emite solo en la primera aparición. Un logotipo repetido en cada diapositiva no se repite.
+3. **Filtro del resultado**: si el texto reconocido tiene menos de `OFFICE_MIN_TEXT_CHARS` (6) caracteres alfanuméricos se descarta (icono, pictograma). Texto real corto como "Total 42" (7) pasa; "A-12" (3) se pierde: límite aceptado y documentado.
+
+Además: imágenes con tipo `image/x-emf`, `image/x-wmf` o `image/svg+xml` (Pillow no las abre fuera de Windows y ni siquiera allí de forma fiable) no se leen y cuentan en un único aviso `images_skipped`; el tipo decide, no una excepción, para no confundirlas con una imagen corrupta (`image_failed`). En PPTX `shape.image` ya devuelve el PNG de respaldo de un SVG. El alt text real se conserva siempre, también en imágenes pequeñas, y se descarta si coincide con el nombre de la forma, parece un nombre de archivo (`.png`, `.jpg`…) o es un nombre automático del tipo "Picture 3"/"Imagen 3".
 
 ### D5. Cómo se lee cada imagen
 
-Un `image_loader.load_image(fp, name)` común (extraído de `image_converter.py`): `Image.open`, límite de píxeles, EXIF, transparencia sobre fondo blanco, RGB y reducción a ≤ 1 800 px. Después `recognize.read_image(image, engine, page_like)` (extraído de `pdf_pipeline._read_upright`): si la imagen es "de página" —cubre ≥ `SCAN_COVERAGE` (50 %) de la diapositiva en PPTX, o sus dos lados ≥ `OFFICE_PAGE_LIKE_PX` en DOCX— se usa la lectura con reintento de orientación 90/180/270° y solo líneas horizontales; si no, un único OCR a 0° (una figura sin texto no debe costar cuatro inferencias). El texto sale de `lines_to_markdown` con el mismo `MIN_CONFIDENCE` y el mismo aviso agregado `low_confidence_dropped`.
+Un `image_loader.load_image(fp, name)` común (extraído de `image_converter.py`): `Image.open`, límite de píxeles, EXIF, transparencia sobre fondo blanco, RGB y reducción a ≤ 1 800 px. Después `recognize.read_image(image, engine, page_like)` (extraído de `pdf_pipeline._read_upright`): si la imagen es "de página" —se muestra al menos al `SCAN_COVERAGE` (50 %) de la página o diapositiva; en el respaldo en píxeles de DOCX, ambos lados ≥ 1 000 px— se usa la lectura con reintento de orientación 90/180/270° y solo líneas horizontales; si no, un único OCR a 0° (una figura sin texto no debe costar cuatro inferencias). El texto sale de `lines_to_markdown` con el mismo `MIN_CONFIDENCE` y el mismo aviso agregado `low_confidence_dropped`.
 
 El refactor deja `convert_image` y `convert_pdf` con exactamente el mismo comportamiento (los 120 tests existentes son la red).
 
@@ -87,7 +89,7 @@ Sin dependencias nuevas. `requirements.txt` pasa a `markitdown[all]==<versión p
 
 ## Estrategia de pruebas
 
-1. **Unitarias puras**: alt text real vs automático, umbral de área/píxeles, deduplicación, mapeo de códigos a mensajes ES/EN, orden de sustitución.
+1. **Unitarias puras**: alt text real vs automático, umbral de área mostrada y respaldo en píxeles, filtro de caracteres alfanuméricos, deduplicación, mapeo de códigos a mensajes ES/EN, orden de sustitución.
 2. **Integración con motor *fake***: orquestación DOCX y PPTX (imágenes en distintas posiciones, dentro de tabla/grupo, solo imagen, sin imágenes), imagen que explota, imagen ilegible, todas fallan (el archivo sigue saliendo con su texto), cancelación a mitad, progreso, formatos no abribles.
 3. **No regresión**: DOCX/PPTX sin imágenes → `convert_office == convert_document` byte a byte; con imágenes → igual a markitdown salvo las líneas de imagen; `convert_image` y `convert_pdf` sin cambios tras el refactor (suite existente).
 4. **OCR real** (`-m ocr`): DOCX y PPTX con captura con tildes, con diagrama y con página escaneada completa y girada.
@@ -102,14 +104,14 @@ Sin dependencias nuevas. `requirements.txt` pasa a `markitdown[all]==<versión p
 | Texto + captura con texto | Texto nativo + texto OCR en la posición de la imagen, sin enlaces rotos |
 | Solo una imagen (documento escaneado pegado) | Texto OCR; sin avisos |
 | Imagen con alt text real / nombre automático | Alt en cursiva / descartado |
-| Logos e iconos (pequeños) y la misma imagen repetida | Sin OCR |
+| Logos e iconos (pequeños), pictogramas de 512 px y la misma imagen repetida | Sin texto emitido y una sola lectura de la repetida |
 | Imagen dentro de tabla (DOCX) / grupo (PPTX) / marcador con imagen | Texto en su posición |
 | Imagen girada 180° a página completa | Texto legible |
 | Imagen corrupta / formato no soportado (EMF) | Aviso, resto del archivo OK |
-| PPTX real de 19 diapositivas y 28 imágenes | Solo se lee 1; tiempo ≈ sin OCR + 1 inferencia |
+| PPTX real de 19 diapositivas y 28 imágenes | Se leen las 9 que ocupan ≥ 1 %; el texto basura de iconos no se emite; el logotipo repetido sale una vez |
 | `.doc`/`.ppt` arrastrados | Mensaje "Formato antiguo…"; el resto del lote sigue |
 
-**Criterios de aceptación globales**: 0 diferencias en DOCX/PPTX sin imágenes; CER ≤ 5 % en capturas limpias ES/EN; ningún DOCX/PPTX del corpus termina en fallo total por una imagen; cancelación en menos de una imagen; un PPTX de 50 diapositivas con imágenes decorativas no se hace más lento que hoy de forma apreciable (el filtro evita el OCR).
+**Criterios de aceptación globales**: 0 diferencias en DOCX/PPTX sin imágenes; CER ≤ 5 % en capturas limpias ES/EN; ningún DOCX/PPTX del corpus termina en fallo total por una imagen; cancelación en menos de una imagen; un PPTX con decenas de imágenes decorativas no emite texto basura y tarda segundos (no minutos) más que hoy.
 
 ## Resultados del spike (macOS arm64, 2026-10-17, antes de implementar)
 
@@ -121,14 +123,23 @@ Sin dependencias nuevas. `requirements.txt` pasa a `markitdown[all]==<versión p
 | S4 | PPTX real (19 diapositivas, 13.9 MB): 28 imágenes (27 < 5 % de la diapositiva), 3 grupos, 7 tablas, medios `.jpeg/.jpg/.png/.svg` | recuento con python-pptx | D4: el umbral de área es imprescindible |
 | S5 | Cargar 0.01 s, guardar copia 0.20 s, markitdown 0.07 s con ese PPTX | cronometrado | D3 es barato |
 | S6 | `converter.py` no cambió desde el commit inicial; `.doc` binario real → `UnsupportedFormatException` | `git log`, conversión directa | D8: no es regresión |
+| S7 | Iconos reales de 233 apps de macOS a 16–1 024 px: ≈ 40–60 % producen "texto" (`PDF`, `D`, `c (cid 0 -`), siempre ≤ 5 alfanuméricos, con confianza de 0.5 a 1.0; leerlos cuesta 70–100 ms | 50 `.icns` sin filtrar | D4: filtro de tamaño mostrado **y** de caracteres |
+| S8 | Fotos reales (3 JPG del sistema, 200–2 400 px): 0 texto en 11 de 12 lecturas (una devuelve 16–17 caracteres de un rótulo); 3–280 ms | lectura directa | El filtro de caracteres basta; no hace falta detectar "foto" |
+| S9 | Texto corto legible desde letra de 8 px (imagen de 149 × 22 px): CER 0 | frase de 27 caracteres, fuentes de 8 a 32 px | Un umbral de píxeles no puede separar iconos de texto pequeño → tamaño mostrado + caracteres |
+| S10 | PPTX real (28 imágenes): 9 ≥ 1 % de la diapositiva (solo 1 ≥ 5 %); 9 imágenes distintas dan algún texto, 5 de ellas ≤ 5 alfanuméricos (basura); un logotipo con ~25–29 caracteres aparece 3 veces; OCR de las 28: 1.2 s, de las 9 ≥ 1 %: 0.6 s | análisis con python-pptx + OCR | D4: 1 % en vez del 5 % de PDF; deduplicar |
+| S11 | Sustituir imágenes por cuadros de texto en las mismas coordenadas (suelta, marcador con imagen, dentro de un grupo, 28 en el deck real) y convertir con markitdown: salida idéntica a la original salvo las líneas de imagen; el texto sale en el orden de lectura | prototipo sobre un deck sintético y el real | D3 validado |
+| S12 | markitdown 0.1.6 de PyPI da la misma salida que el commit git instalado (hash idéntico en 11 DOCX y 2 PPTX); 0.1.8 cambia las líneas de imagen del PPTX real (`![](X.jpg)` → `![Imagen 50](X.jpg)`) | cuatro conversiones comparadas | D10: fijar `markitdown[all]==0.1.6` |
+| S13 | Pillow en macOS: EMF mínimo → `ZeroDivisionError`; SVG y bytes basura → `UnidentifiedImageError`; GIF abre (primer fotograma) | pruebas directas | D4: decidir por tipo de contenido |
 
-**Por calibrar en la Fase 0**: `OFFICE_MIN_SIDE_PX`/`OFFICE_MIN_PIXELS`/`OFFICE_PAGE_LIKE_PX` en DOCX, coste real de un DOCX con muchas imágenes, comportamiento con EMF/WMF y con imágenes recortadas/rotadas, y Windows.
+**Sin cubrir por la Fase 0**: Windows (EMF/WMF, rutas, tiempos), documentos Word reales con imágenes flotantes, VML o cuadros de texto (el respaldo en píxeles los cubre de forma conservadora), imágenes recortadas/giradas dentro del documento (límite documentado) y un corpus de DOCX reales; la medición del tamaño mostrado en DOCX se valida en la Fase 2.
 
 ## Risks / Trade-offs
 
 - **[Acoplamiento a markitdown]** (`pre_process_docx` interno; ordenar por `(top, left)` en PPTX) → versión fijada, tests que fallan si cambia, y caída a `convert_document` ante un error inesperado en DOCX.
 - **[Tiempo en documentos con muchas imágenes]** → filtro por tamaño, deduplicación, progreso por imagen y cancelación entre imágenes; sin *timeout* por imagen (ONNX no es interrumpible), igual que en PDF.
-- **[Falsos positivos de tamaño en DOCX]** (un banner grande sin texto se lee en balde) → cuesta tiempo, no corrección; calibrar umbrales con el corpus.
+- **[Banner o foto grande sin texto]** → se lee en balde (≈ 0.1–0.3 s) pero el filtro de 6 caracteres impide que ensucie el `.md`.
+- **[Texto real de menos de 6 alfanuméricos dentro de una imagen]** ("A-12") → se pierde; límite documentado.
+- **[Tamaño mostrado en DOCX]** depende de `document.xml` y de emparejar por SHA-1; si falla, respaldo en píxeles.
 - **[Alt text automático que se cuela]** → heurística documentada y probada; lo peor es una línea de ruido.
 - **[Imágenes recortadas o giradas por el documento]** (`srcRect`, `rot`) → la imagen se lee sin aplicar el recorte/giro; una imagen girada 90° se cubre solo si es "de página" (reintento de orientación). Límite documentado.
 - **[Cambio de salida con imágenes]** → deliberado y documentado; los consumidores que dependieran de las líneas `![..](..)` (ninguno conocido) se verían afectados.

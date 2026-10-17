@@ -37,15 +37,34 @@ Para un DOCX con imágenes, el sistema SHALL generar el resto del contenido (tex
 - **THEN** la salida, descontadas las líneas de imagen, es idéntica a la de `convert_document`
 
 ### Requirement: Filtrado de imágenes decorativas y duplicadas
-El sistema SHALL leer solo imágenes cuyo tamaño en píxeles alcance los umbrales `OFFICE_MIN_SIDE_PX` y `OFFICE_MIN_PIXELS`, y SHALL leer una sola vez las imágenes con contenido idéntico.
+El sistema SHALL leer solo imágenes cuyo tamaño mostrado (`wp:extent`) alcance `OFFICE_MIN_AREA` de la página; cuando no se pueda determinar, SHALL aplicar el respaldo en píxeles (`OFFICE_FALLBACK_MIN_SIDE_PX` y `OFFICE_FALLBACK_MIN_PIXELS`). SHALL leer una sola vez las imágenes con contenido idéntico y emitir su texto solo en la primera aparición.
 
-#### Scenario: Icono de 48 × 48 px
-- **WHEN** el DOCX contiene un icono de 48 × 48 px y una captura de 900 × 420 px
+#### Scenario: Icono mostrado pequeño
+- **WHEN** el DOCX contiene un icono mostrado a 0.3 pulgadas y una captura mostrada a 6 pulgadas de ancho
 - **THEN** solo la captura se envía al motor OCR
+
+#### Scenario: Icono de alta resolución mostrado pequeño
+- **WHEN** una imagen de 1 024 px se muestra a 0.3 pulgadas
+- **THEN** no se envía al motor OCR
+
+#### Scenario: Tamaño mostrado desconocido
+- **WHEN** no se puede determinar el tamaño mostrado de una imagen de 48 × 48 px
+- **THEN** no se lee, por no alcanzar el respaldo en píxeles
 
 #### Scenario: Logotipo repetido
 - **WHEN** la misma imagen aparece en diez posiciones del documento
-- **THEN** se ejecuta una sola vez el OCR y el resultado se reutiliza en las posiciones que corresponda
+- **THEN** se ejecuta una sola vez el OCR y su texto aparece solo en la primera posición
+
+### Requirement: Descarte de texto sin valor
+El sistema SHALL descartar el texto reconocido de una imagen cuando tenga menos de `OFFICE_MIN_TEXT_CHARS` caracteres alfanuméricos, sin emitir aviso.
+
+#### Scenario: Pictograma que "lee" una letra
+- **WHEN** el OCR devuelve "D" para un pictograma mostrado a 2 pulgadas
+- **THEN** el `.md` no contiene esa letra
+
+#### Scenario: Texto real corto
+- **WHEN** el OCR devuelve "Total 42" para una imagen
+- **THEN** el texto aparece en el `.md`
 
 ### Requirement: Texto alternativo real
 El sistema SHALL conservar el texto alternativo de una imagen cuando sea una descripción real y emitirlo como una línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con un nombre de archivo o con un nombre automático.
@@ -59,7 +78,7 @@ El sistema SHALL conservar el texto alternativo de una imagen cuando sea una des
 - **THEN** no aparece en el `.md`
 
 ### Requirement: Imágenes de página y orientación
-Si una imagen ocupa lo que una página (ambos lados ≥ `OFFICE_PAGE_LIKE_PX`), el sistema SHALL usar la lectura con reintento de orientación del pipeline de PDF; para el resto de imágenes SHALL ejecutar un único OCR a 0°.
+Si una imagen se muestra al menos al `SCAN_COVERAGE` de la página (o, en el respaldo en píxeles, ambos lados ≥ 1 000 px), el sistema SHALL usar la lectura con reintento de orientación del pipeline de PDF; para el resto de imágenes SHALL ejecutar un único OCR a 0°.
 
 #### Scenario: Escaneo girado 180° pegado en el documento
 - **WHEN** el DOCX contiene una imagen de página completa girada 180°

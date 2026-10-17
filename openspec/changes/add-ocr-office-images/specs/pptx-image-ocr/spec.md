@@ -37,17 +37,28 @@ Para un PPTX con imágenes, el sistema SHALL generar el resto del contenido (tí
 - **THEN** la salida, descontadas las líneas de imagen y el texto añadido por ellas, es idéntica a la de `convert_document`
 
 ### Requirement: Filtrado de imágenes decorativas y duplicadas
-El sistema SHALL leer solo imágenes cuya forma ocupe al menos `IMAGE_MIN_AREA` de la diapositiva, y SHALL leer una sola vez las imágenes con contenido idéntico.
+El sistema SHALL leer solo imágenes cuya forma ocupe al menos `OFFICE_MIN_AREA` (1 %) de la diapositiva, SHALL leer una sola vez las imágenes con contenido idéntico y emitir su texto solo en la primera aparición.
 
 #### Scenario: Deck con logos e iconos
-- **WHEN** un PPTX tiene 28 imágenes y solo una ocupa más del 5 % de su diapositiva
-- **THEN** solo esa imagen se envía al motor OCR
+- **WHEN** un PPTX tiene 28 imágenes y solo 9 ocupan al menos el 1 % de su diapositiva
+- **THEN** solo esas 9 se envían al motor OCR
+
+#### Scenario: Logotipo repetido en varias diapositivas
+- **WHEN** el mismo logotipo, con texto, aparece en tres diapositivas
+- **THEN** se ejecuta una sola vez el OCR y su texto aparece solo en la primera diapositiva
+
+### Requirement: Descarte de texto sin valor
+El sistema SHALL descartar el texto reconocido de una imagen cuando tenga menos de `OFFICE_MIN_TEXT_CHARS` caracteres alfanuméricos, sin emitir aviso.
+
+#### Scenario: Icono de 512 px que "lee" un carácter
+- **WHEN** el OCR devuelve un solo carácter para un icono de una diapositiva
+- **THEN** el `.md` no contiene ese carácter ni líneas de imagen
 
 ### Requirement: Texto alternativo real
 El sistema SHALL conservar el texto alternativo (`descr`) de una imagen cuando sea una descripción real, aunque la imagen no se lea por ser pequeña, y emitirlo como línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con el nombre de la forma, con un nombre de archivo o con un nombre automático.
 
 #### Scenario: Icono con descripción del autor
-- **WHEN** un icono de 1 % de la diapositiva tiene el texto alternativo "Correo de contacto"
+- **WHEN** un icono de 0.2 % de la diapositiva tiene el texto alternativo "Correo de contacto"
 - **THEN** el `.md` contiene `*Correo de contacto*` y no se ejecuta OCR sobre el icono
 
 #### Scenario: Nombre de archivo como descripción
