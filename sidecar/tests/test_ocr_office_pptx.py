@@ -184,3 +184,17 @@ class TestRealOcr:
 
     def test_diagram_in_a_group(self, pptx_files):
         assert "Diagrama de flujo" in run(pptx_files["en_grupo"]).markdown
+
+
+def test_low_confidence_noise_from_a_decorative_image_raises_no_warning(pptx_files):
+    class Noisy(FakeEngine):
+        def recognize(self, image):
+            return [OcrLine("ruido", (5, 5, 300, 40), 0.2), OcrLine("más ruido", (5, 50, 300, 90), 0.1)]
+    assert run(pptx_files["con_figura"], Noisy()).warnings == []
+
+
+def test_dropped_lines_are_reported_once_when_the_image_does_yield_text(pptx_files):
+    class Mixed(FakeEngine):
+        def recognize(self, image):
+            return [OcrLine("texto reconocido con confianza", (5, 5, 300, 40), 0.99), OcrLine("ruido", (5, 50, 300, 90), 0.1)]
+    assert [(w.code, w.count) for w in run(pptx_files["con_figura"], Mixed()).warnings] == [("low_confidence_dropped", 1)]

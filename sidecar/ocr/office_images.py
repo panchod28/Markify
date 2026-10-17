@@ -75,7 +75,9 @@ def _read_embedded(data: bytes, name: str, page_like: bool, engine: OcrEngine) -
         if e.code == "ocr_failed" and e.cause is None:  # ninguna orientación lee texto (p. ej. foto de fondo): no es un fallo
             return "", 0
         raise
-    return (text if alnum_count(text) >= OFFICE_MIN_TEXT_CHARS else ""), dropped
+    if alnum_count(text) < OFFICE_MIN_TEXT_CHARS:
+        return "", 0  # decorativa: ni texto ni aviso de líneas descartadas (los iconos "leen" ruido de baja confianza)
+    return text, dropped
 
 
 def _pixel_size(data: bytes) -> tuple[int, int] | None:
