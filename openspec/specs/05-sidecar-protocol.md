@@ -102,6 +102,8 @@ Emitir inmediatamente cuando se empieza a procesar un archivo.
 
 `progress` es un entero de 0 a 99. Nunca emitir 100 en `file_progress` — el 100 lo da `file_result`.
 
+**PDF con páginas escaneadas o mixtas:** también emite `file_progress` tras cada página, con `progress = 100 · páginas procesadas / total` (tope 99). Los mensajes de progreso nunca llevan `warnings` ni `markdownContent`. Los PDFs que van por la ruta rápida (todo texto) no emiten progreso intermedio.
+
 ### 3.3 Archivo completado exitosamente
 
 ```json
@@ -111,11 +113,15 @@ Emitir inmediatamente cuando se empieza a procesar un archivo.
     "fileId": "file-uuid-1",
     "status": "completed",
     "progress": 100,
-    "content": "# Informe de Ventas\n\nContenido del documento...",
+    "markdownContent": "# Informe de Ventas\n\nContenido del documento...",
     "errorMessage": null
   }
 }
 ```
+
+**`warnings` (opcional):** si la conversión terminó con avisos no fatales, el payload añade
+`"warnings": [{"page": 7, "stage": "render", "code": "page_failed", "message": "La página 7 no se pudo procesar"}]`.
+Si no hay avisos el campo se **omite** (no se envía vacío). `page` es `null` en avisos de todo el archivo; `message` va localizado según `lang`. Códigos de aviso: `page_failed`, `low_confidence_dropped`, `frames_skipped`. Rust y el frontend lo reenvían sin interpretarlo.
 
 ### 3.4 Archivo con error
 
@@ -190,7 +196,11 @@ sidecar/
 ├── whisper_handler.py← Transcripción con Whisper
 ├── model_manager.py  ← Descarga y verificación del modelo Whisper
 ├── sanitizer.py      ← Sanitización de nombres de archivo
-├── error_messages.py ← Mapeo de excepciones a mensajes de usuario
+├── error_messages.py ← Mapeo de excepciones/códigos a mensajes de usuario (ES/EN)
+├── ocr/              ← OCR local (ver §14); se importa bajo demanda
+├── fetch_ocr_models.py ← Descarga los modelos OCR con SHA-256 fijado (solo build/CI)
+├── smoke_test.py     ← Prueba del binario empaquetado
+├── tests/            ← pytest
 ├── requirements.txt
 └── build.py          ← Script PyInstaller
 ```
@@ -757,3 +767,72 @@ PyInstaller==6.8.0
 4. **Emitir `conversion_complete` o `conversion_cancelled` exactamente UNA VEZ** al terminar un batch, nunca cero veces ni más de una.
 5. **Si el sidecar falla internamente (crash):** Tauri detecta que el proceso terminó y emite error en todos los archivos pendientes. El sidecar no necesita manejar este caso — Tauri lo hace.
 6. **No mantener estado entre conversiones:** cada mensaje `convert` es independiente. No asumir nada del batch anterior.
+
+7. **`print()` está prohibido en todo el sidecar, incluido `ocr/`.** Los diagnósticos van a stderr (`ocr/diagnostics.py::log_issue`: una línea por incidente con archivo, página, etapa y código; sin rutas completas ni contenido del documento).
+8. **Las importaciones de OCR son siempre perezosas** (dentro de la función o rama que las usa): convertir un documento de texto o audio nunca carga OpenCV ni ONNX.
+
+---
+
+## 14. OCR, imágenes y PDF por página (`sidecar/ocr/`)
+
+> Introducido por el change `add-ocr-image-pdf-support`. El código vigente es `sidecar/ocr/`; aquí se fijan las reglas y el contrato.
+
+### 14.1 Despacho en `handle_convert`
+
+| `category` / extensión | Handler |
+|---|---|
+| `document`, extensión `.pdf` | `ocr.pdf_pipeline.convert_pdf(path, cancel_flag, on_progress)` |
+| `document`, resto | `convert_document(path)` (sin cambios) |
+| `audio` | `transcribe_audio(...)` |
+| `image` | `ocr.image_converter.convert_image(path)` |
+
+`convert_image` y `convert_pdf` devuelven `ConversionResult(markdown, warnings: list[PageIssue])`; `main.py` serializa los avisos con `error_messages.issue_to_payload(issue, lang)`.
+
+### 14.2 Motor OCR
+
+- `ocr/engine.py`: `OcrEngine` (Protocol con `recognize(image) -> list[OcrLine]`), `ENGINES` y `get_engine()` (singleton perezoso; `MARKIFY_OCR_ENGINE` solo para desarrollo). Añadir un motor = una clase + una línea en `ENGINES`.
+- Motor por defecto `rapidocr_engine.py`: RapidOCR sobre ONNX Runtime (CPU), PP-OCRv5 `det mobile` + `rec latin mobile`, **sin** clasificador de línea, con rutas de modelo explícitas (nunca descarga en runtime) y detección con `limit_type=max`, `limit_side_len=1280` (pico de RAM ≈ 1.1 GB; con el valor por defecto de RapidOCR llega a ≈ 1.9 GB).
+- Los modelos se obtienen en build con `fetch_ocr_models.py` (versión y SHA-256 fijados) a `sidecar/ocr/models/` y viajan dentro del binario (`ocr/resources.py::resource_path`, `sys._MEIPASS` cuando está empaquetado).
+
+### 14.3 Clasificación y pipeline de PDF
+
+`page_classifier.classify_page(PageMetrics)` es pura. Umbrales: `MIN_TEXT_CHARS=25`, `IMAGE_MIN_AREA=0.05`, `SCAN_COVERAGE=0.5`.
+
+| Clase | Condición | Tratamiento |
+|---|---|---|
+| `TEXT` | ≥ 25 caracteres y sin imagen relevante, o capa de texto con imagen de página completa | texto nativo (pdfminer) |
+| `SCANNED` | < 25 caracteres y (imágenes cubren ≥ 50 % o alguna ≥ 5 %) | render 150 DPI (lado mayor ≤ 1 800 px, una página en memoria) + OCR + `layout` |
+| `MIXED` | ≥ 25 caracteres e imagen ≥ 5 % que no cubre la página | texto nativo + OCR del recorte de cada imagen relevante, después del texto |
+| `BLANK` | sin texto ni imágenes relevantes | se omite sin aviso |
+
+- **Ruta rápida:** todo `TEXT`/`BLANK` → `convert_document` tal cual (salida idéntica byte a byte; no se carga el motor).
+- **Ruta híbrida:** alguna `SCANNED`/`MIXED`; páginas unidas en orden con una línea en blanco.
+- **Orientación:** `/Rotate` lo resuelve pdfium al renderizar. Si a 0° no se lee texto horizontal en una página `SCANNED`, se reintenta a 90/180/270° y se conserva la de mayor suma `confianza × longitud`; solo cuentan las líneas horizontales. Si ninguna lee texto, la página falla con `ocr_failed`.
+- **Fallos por página:** un único `try/except` por página; produce `PageIssue("page_failed", etapa, página)`, el marcador `<!-- Markify: página N no se pudo procesar (código) -->` (el código es el de la causa) y continúa. Si ninguna página aporta texto: error con el código del primer fallo, o `no_text_found` si no hubo fallos.
+- **Errores fatales del archivo:** cifrado → `PermissionError("Archivo protegido con contraseña")` (mismo mensaje de siempre); `pdf_open_failed` (no abrible, truncado, 0 páginas); `ocr_engine_unavailable`.
+- **Cancelación y progreso:** `cancel_flag` se consulta antes de cada página; al cancelar, `convert_pdf` devuelve `""` y `main.py` emite `conversion_cancelled`. `on_progress` recibe 0–99 (§3.2).
+
+### 14.4 Layout (`ocr/layout.py::lines_to_markdown`)
+
+Filtra por `MIN_CONFIDENCE=0.5` (devuelve cuántas líneas descartó; se avisa **una vez por archivo** con `low_confidence_dropped`), detecta columnas por huecos en la proyección horizontal (tolera una línea puente: título o pie centrado, que se coloca antes/después de las columnas), ordena de arriba abajo y une líneas en párrafos. No infiere encabezados, tablas ni listas.
+
+### 14.5 Errores y diagnóstico (`ocr/diagnostics.py`)
+
+`ConversionError(code, stage, file, page, cause)` con `code` estable; `get_error_message` resuelve primero `exception.code` en `MESSAGES[lang]` y, si no está, aplica el mapeo por nombre de excepción de siempre.
+
+| Código de error | Mensaje (ES) |
+|---|---|
+| `no_text_found` | No se encontró texto en el archivo |
+| `image_decode_failed` | No se pudo leer la imagen (puede estar dañada) |
+| `image_too_large` | La imagen es demasiado grande para procesarla |
+| `ocr_engine_unavailable` | El motor de reconocimiento de texto no está disponible |
+| `ocr_failed` | No se pudo reconocer el texto de la imagen |
+| `pdf_open_failed` | No se pudo abrir el PDF (puede estar dañado) |
+| `page_render_failed` | No se pudo procesar el documento (error al leer sus páginas) |
+| `page_failed` | No se pudo procesar el documento |
+
+Todo código nuevo necesita mensaje ES y EN (`tests/test_error_codes.py` lo comprueba). Las plantillas de avisos están en `WARNINGS` (`low_confidence_dropped`, `frames_skipped`, `page_failed`).
+
+### 14.6 Dependencias
+
+`requirements.txt` añade `rapidocr==3.10.0`, `opencv-python-headless>=4.9,<4.13`, `pypdfium2>=4.30` y `pdfminer.six` (explícitos aunque algunos lleguen transitivos).

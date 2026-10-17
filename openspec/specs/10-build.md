@@ -269,7 +269,10 @@ export default defineConfig(async () => ({
 - Salida fija: `src-tauri/binaries/markify-sidecar/` (ejecutable + `_internal/`), sin target triple en el nombre. Cada plataforma compila la suya; el triple solo se usa para nombrar el artefacto de CI.
 - `build.py` borra la salida anterior antes de compilar.
 - Flags relevantes: `--collect-submodules numpy._core --collect-submodules numpy.lib` (numpy ≥ 2), `--collect-all magika/markitdown/PIL/pptx`, `--copy-metadata …`, `--collect-data whisper`, y la ruta `setuptools/_vendor` cuando existe `jaraco` (setuptools ≥ 71).
-- Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
+- OCR: `build.py` llama a `fetch_ocr_models.py` (modelos con SHA-256 fijado; un hash distinto rompe el build) y añade `--add-data <sidecar/ocr/models>:ocr/models`, `--collect-all rapidocr` (con `--exclude-module rapidocr.inference_engine.pytorch`), `--collect-binaries onnxruntime`; después borra los modelos PP-OCRv6 que arrastra el wheel de rapidocr y no se usan. Las importaciones de OCR son perezosas, así que el arranque en frío no cambia.
+- Verificación: `cd sidecar && python smoke_test.py` (protocolo JSON puro, conversión de un CSV, de una imagen y de un PDF escaneado por OCR, y arranque posterior ≤ 3 s). CI lo ejecuta antes de empaquetar.
+- Tests: `python -m pytest tests -q` (incluye los tests con OCR real, marcados `ocr`). CI instala `pytest` y `reportlab` (genera los PDFs de prueba) y ejecuta `fetch_ocr_models.py` antes. Medidas locales (Apple Silicon): `python tests/stress_pdf_memory.py 200` → RSS pico ≈ 1.1 GB y plano, ≈ 0.3 s/página.
+- Licencias: `THIRD_PARTY_NOTICES.md` (raíz) se incluye en el instalador (`Resources/` en macOS vía `tauri.macos.conf.json`, junto al sidecar en Windows vía `tauri.windows.conf.json`). Actualizarlo al añadir o cambiar dependencias de OCR.
 
 ---
 
@@ -423,6 +426,7 @@ npx tauri icon path/to/icon-1024.png
 | Tauri runtime + WebView | ~3-5 MB |
 | Frontend compilado (React + assets) | ~2-4 MB |
 | Python sidecar (sin modelo Whisper) | ~80-120 MB |
+| OCR (OpenCV, ONNX Runtime, shapely, modelos PP-OCRv5 ≈ 12.7 MB) | +~105 MB en disco (954 MB frente a 850 MB de la carpeta del sidecar sin OCR, medido en macOS) |
 | **Instalador total (sin modelo)** | **~90-130 MB** |
 | Modelo Whisper base (descarga on-demand) | ~145 MB |
 | **Instalación total en disco** | **~250-300 MB** |
@@ -546,6 +550,8 @@ Verificar manualmente antes de cada build de distribución:
 - [ ] El instalador generado funciona en una máquina limpia (sin Node, Python, ni Rust instalados)
 - [ ] Drag & drop de PDF funciona y descarga el .md correctamente
 - [ ] Drag & drop de MP3 funciona (descarga modelo si es necesario) y descarga el .md
+- [ ] Una imagen PNG/JPG (ES y EN) y un PDF escaneado se convierten sin red; las tildes, ñ, ¿ y ¡ salen bien
+- [ ] Un PDF con páginas ilegibles termina con aviso (icono + tooltip) y el resto de páginas convertidas
 - [ ] Múltiples archivos generan ZIP correcto
 - [ ] Cancelación funciona sin corromper el estado
 - [ ] Cambio de tema light/dark funciona y persiste

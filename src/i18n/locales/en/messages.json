@@ -9,6 +9,9 @@
     "image_decode_failed": "Could not read the image (it may be corrupted)",
     "image_too_large": "The image is too large to process",
     "ocr_engine_unavailable": "The text recognition engine is not available",
-    "ocr_failed": "Could not recognize the text in the image"
+    "ocr_failed": "Could not recognize the text in the image",
+    "pdf_open_failed": "Could not open the PDF (it may be corrupted)",
+    "page_render_failed": "Could not process the document (error reading its pages)",
+    "page_failed": "Could not process the document"
   }
 }

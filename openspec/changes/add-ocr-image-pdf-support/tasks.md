@@ -62,8 +62,8 @@
 
 ## 5. Fase 4 — Documentación y cierre
 
-- [ ] 5.1 Actualizar `README.md` (formatos, OCR local, tamaño) y `CONTRIBUTING.md` (tests OCR, obtención de modelos, smoke test)
-- [ ] 5.2 Actualizar specs planos: `01-types` (image), `05-sidecar-protocol` (ocr/, `warnings`), `10-build` (modelos, CI); `08-i18n` si aplica
-- [ ] 5.3 Incluir avisos de licencia de RapidOCR/PP-OCR/ONNX/OpenCV/pypdfium2 en el instalador
-- [ ] 5.4 Anotar en CONTRIBUTING los riesgos preexistentes detectados (`--onefile`, ruta del modelo Whisper en *frozen*) como issues separados
-- [ ] 5.5 `openspec validate add-ocr-image-pdf-support --strict` y archivar el change
+- [x] 5.1 Actualizar `README.md` (formatos, OCR local, tamaño) y `CONTRIBUTING.md` (tests OCR, obtención de modelos, smoke test) *README (formatos, OCR, límites, estructura, build) y CONTRIBUTING (tests con OCR, `fetch_ocr_models.py`, stress y smoke, ajustes). El CI de tests ahora instala también `reportlab` (los fixtures lo necesitan).*
+- [x] 5.2 Actualizar specs planos: `01-types` (image), `05-sidecar-protocol` (ocr/, `warnings`), `10-build` (modelos, CI); `08-i18n` si aplica *`01-types` (image, `ConversionWarning`, extensiones, icono), `05-sidecar-protocol` (progreso por página, `warnings`, §14 OCR/PDF/errores), `08-i18n` (claves nuevas ES/EN; también añadidas a `messages.json` las de PDF), `10-build` (modelos, flags, CI, tamaño, checklist).*
+- [x] 5.3 Incluir avisos de licencia de RapidOCR/PP-OCR/ONNX/OpenCV/pypdfium2 en el instalador *`THIRD_PARTY_NOTICES.md` con RapidOCR, modelos PP-OCRv5, ONNX Runtime, OpenCV, pypdfium2/PDFium, pdfminer.six, Shapely/pyclipper y Pillow; incluido en `Resources/` de la `.app` (verificado) y en `tauri.windows.conf.json` (sin verificar). **Falta** revisión legal de si basta la lista o hay que incluir los textos completos (Apache-2.0 pide copia de la licencia y NOTICE).*
+- [x] 5.4 Anotar en CONTRIBUTING los riesgos preexistentes detectados (`--onefile`, ruta del modelo Whisper en *frozen*) como issues separados *Sección "Known risks" en CONTRIBUTING: ruta del modelo Whisper en frozen, 1.er arranque lento, sin timeout por página, tablas de pdfplumber en PDFs mixtos, RAM en Windows sin medir. `--onefile` ya no aplica tras `sidecar-onedir`. **Falta** abrirlos como issues en GitHub.*
+- [ ] 5.5 `openspec validate add-ocr-image-pdf-support --strict` y archivar el change *`validate --strict` pasa; el archivado queda pendiente hasta cerrar las tareas abiertas (2.14, 2.15, 1.3b, 1.5b, 1.7c, 1.8, 3.12, 4.8).*

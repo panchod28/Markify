@@ -1,0 +1,19 @@
+# Third-party notices
+
+Markify is MIT-licensed (see `LICENSE`). The installer also ships the components below for local OCR
+(images and scanned PDFs). Each one stays under its own license; this list is not a substitute for their license texts.
+Versions are the ones pinned or resolved at build time (`sidecar/requirements.txt`, `sidecar/fetch_ocr_models.py`).
+
+| Component | Used for | License |
+|-----------|----------|---------|
+| [RapidOCR](https://github.com/RapidAI/RapidOCR) 3.10.0 | OCR pipeline (detection + recognition) | Apache-2.0 |
+| PP-OCRv5 models `ch_PP-OCRv5_det_mobile` and `latin_PP-OCRv5_rec_mobile` ([PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR), ONNX conversions distributed by RapidOCR) | Text detection and Latin-script recognition (Spanish, English) | Apache-2.0 |
+| [ONNX Runtime](https://github.com/microsoft/onnxruntime) | Runs the OCR models on CPU | MIT |
+| [OpenCV](https://github.com/opencv/opencv) (`opencv-python-headless`) | Image pre/post-processing used by RapidOCR | Apache-2.0 |
+| [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) and [PDFium](https://pdfium.googlesource.com/pdfium/) | Open, classify and render PDF pages | BSD-3-Clause / Apache-2.0 |
+| [pdfminer.six](https://github.com/pdfminer/pdfminer.six) | Per-page text extraction from PDFs | MIT |
+| [Shapely](https://github.com/shapely/shapely) and [pyclipper](https://github.com/fonttools/pyclipper) | Text-box geometry in RapidOCR | BSD-3-Clause / MIT |
+| [Pillow](https://github.com/python-pillow/Pillow) | Image loading and conversion | MIT-CMU (HPND) |
+
+Other dependencies (markitdown, OpenAI Whisper, PyTorch, NumPy, Tauri, React, …) are covered by their own licenses
+in their respective projects.

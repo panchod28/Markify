@@ -47,7 +47,7 @@ jobs:
       - name: Test sidecar
         working-directory: sidecar
         run: |
-          pip install pytest
+          pip install pytest reportlab  # reportlab genera los PDFs de prueba (tests/make_fixtures.py)
           python fetch_ocr_models.py
           python -m pytest tests -q
 

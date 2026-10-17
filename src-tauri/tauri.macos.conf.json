@@ -3,7 +3,8 @@
   "bundle": {
     "macOS": {
       "files": {
-        "Resources/sidecar": "binaries/markify-sidecar"
+        "Resources/sidecar": "binaries/markify-sidecar",
+        "Resources/THIRD_PARTY_NOTICES.md": "../THIRD_PARTY_NOTICES.md"
       }
     }
   }

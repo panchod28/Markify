@@ -9,8 +9,8 @@
 
 ```typescript
 // ─── Categoría de archivo ─────────────────────────────────────────────────
-// Determina qué herramienta usa el sidecar: markitdown o Whisper.
-export type FileCategory = 'document' | 'audio';
+// Determina qué herramienta usa el sidecar: markitdown, Whisper u OCR (imágenes).
+export type FileCategory = 'document' | 'audio' | 'image';
 
 // ─── Estado de conversión de un archivo ──────────────────────────────────
 export type FileStatus =
@@ -125,6 +125,16 @@ export interface ConversionProgressEvent {
   progress: number;         // Nuevo progress (0-100)
   errorMessage?: string;    // Solo si status === 'error'
   markdownContent?: string; // Solo si status === 'completed'
+  warnings?: ConversionWarning[]; // Solo en el file_result de un archivo completado con avisos
+}
+
+// Aviso no fatal de una conversión (OCR). El texto ya llega localizado desde el sidecar (según `lang`).
+// `page` es null en avisos de todo el archivo (p. ej. líneas descartadas por baja confianza).
+export interface ConversionWarning {
+  page: number | null;
+  stage: string;   // open | decode | classify | render | ocr | layout | assemble
+  code: string;    // page_failed | low_confidence_dropped | frames_skipped
+  message: string;
 }
 
 // Payload del evento 'model:download-progress'
@@ -195,10 +205,18 @@ export const AUDIO_EXTENSIONS = [
 
 export type AudioExtension = typeof AUDIO_EXTENSIONS[number];
 
+// ─── Extensiones de imagen (OCR local) ─────────────────────────────────────
+export const IMAGE_EXTENSIONS = [
+  'png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff'
+] as const;
+
+export type ImageExtension = typeof IMAGE_EXTENSIONS[number];
+
 // ─── Unión de todas las extensiones soportadas ────────────────────────────
 export const SUPPORTED_EXTENSIONS = [
   ...DOCUMENT_EXTENSIONS,
   ...AUDIO_EXTENSIONS,
+  ...IMAGE_EXTENSIONS,
 ] as const;
 
 export type SupportedExtension = typeof SUPPORTED_EXTENSIONS[number];
@@ -256,6 +274,8 @@ export const FILE_ICON_MAP: Record<SupportedExtension, {
   // Video
   mp4:  { icon: 'Video',        colorClass: 'text-indigo-500' },
   webm: { icon: 'Video',        colorClass: 'text-indigo-500' },
+  // Imágenes (icono `Image` de lucide-react, importado como ImageIcon; mismo color que el resto)
+  // png, jpg, jpeg, webp, bmp, tif, tiff → { icon: 'Image' }
 };
 ```
 
@@ -281,6 +301,7 @@ export function isSupportedExtension(ext: string): ext is SupportedExtension {
 export function getFileCategory(ext: string): FileCategory | null {
   if ((DOCUMENT_EXTENSIONS as readonly string[]).includes(ext)) return 'document';
   if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) return 'audio';
+  if ((IMAGE_EXTENSIONS as readonly string[]).includes(ext)) return 'image';
   return null;
 }
 ```
