@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Carga de imágenes desde bytes
-El sistema SHALL ofrecer una carga común de imágenes (ruta o bytes) que aplique orientación EXIF, componga la transparencia sobre fondo blanco, convierta a RGB, rechace imágenes que excedan el límite de píxeles con `image_too_large` y los archivos no decodificables con `image_decode_failed`, y reduzca el lado mayor a 1 800 px.
+El sistema SHALL ofrecer una carga común de imágenes (ruta o bytes) que aplique orientación EXIF, componga la transparencia sobre fondo blanco, convierta a RGB, rechace imágenes que excedan el límite de píxeles con `image_too_large` y los archivos no decodificables con `image_decode_failed`, y reduzca el lado mayor al máximo configurado (2 000 px por defecto) sin ampliar nunca imágenes pequeñas.
 
 #### Scenario: PNG con transparencia
 - **WHEN** se carga un PNG de texto negro sobre fondo transparente
@@ -23,7 +23,7 @@ El sistema SHALL ofrecer una lectura de imagen con el reintento de orientación 
 - **THEN** se ejecuta una sola inferencia y se devuelve texto vacío sin lanzar error
 
 ### Requirement: Sin regresión en imágenes sueltas y PDFs
-La extracción de los módulos compartidos SHALL NOT cambiar la salida, los avisos ni los errores de la conversión de imágenes sueltas ni de PDFs.
+La extracción de los módulos compartidos SHALL NOT cambiar la salida, los avisos ni los errores de la conversión de imágenes sueltas ni de PDFs. La única diferencia admitida es que las imágenes con transparencia se componen sobre fondo blanco en lugar de descartar el canal alfa (el texto negro sobre fondo transparente era ilegible).
 
 #### Scenario: Suite existente
 - **WHEN** se ejecutan los tests de imágenes, de PDF y de layout existentes tras el refactor

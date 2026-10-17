@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from ocr import image_converter
+from ocr import image_converter, image_loader
 from ocr.base import OcrLine
 from ocr.diagnostics import ConversionError
 from ocr.image_converter import convert_image
@@ -74,7 +74,7 @@ def test_truncated_image_is_image_decode_failed(tmp_path):
 
 
 def test_too_many_pixels_is_image_too_large_without_running_ocr(tmp_path, monkeypatch):
-    monkeypatch.setattr(image_converter, "MAX_PIXELS", 1000)
+    monkeypatch.setattr(image_loader, "MAX_PIXELS", 1000)
     engine = FakeEngine()
     with pytest.raises(ConversionError) as e:
         convert_image(png(tmp_path, size=(200, 100)), engine)
@@ -85,7 +85,7 @@ def test_large_images_are_downscaled_for_the_engine(tmp_path):
     engine = FakeEngine()
     convert_image(png(tmp_path, size=(5000, 2500)), engine)
     w, h = engine.seen[0].size
-    assert max(w, h) == image_converter.MAX_SIDE_PX and abs(w / h - 2.0) < 0.01
+    assert max(w, h) == image_loader.MAX_SIDE_PX and abs(w / h - 2.0) < 0.01
 
 
 def test_small_images_are_not_upscaled(tmp_path):

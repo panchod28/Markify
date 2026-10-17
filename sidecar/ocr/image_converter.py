@@ -8,10 +8,8 @@ from pathlib import Path
 
 from ocr.base import OcrEngine
 from ocr.diagnostics import ConversionError, PageIssue
-from ocr.layout import lines_to_markdown
-
-MAX_PIXELS = 100_000_000  # por encima se rechaza (imagen enorme / bomba de descompresión)
-MAX_SIDE_PX = 2000        # lado mayor enviado al motor (RapidOCR reescala por encima de esto de todos modos)
+from ocr.image_loader import load_image
+from ocr.recognize import read_simple
 
 
 @dataclass
@@ -29,32 +27,13 @@ def convert_image(file_path: str, engine: OcrEngine | None = None) -> Conversion
     if path.stat().st_size == 0:
         raise ValueError("El archivo está vacío")
 
-    from PIL import Image, ImageOps  # Pillow ya viaja en el sidecar (markitdown)
-
-    try:
-        img = Image.open(path)          # lee solo la cabecera
-        width, height = img.size
-    except Image.DecompressionBombError as e:
-        raise ConversionError("image_too_large", "decode", name, cause=e)
-    except Exception as e:
-        raise ConversionError("image_decode_failed", "decode", name, cause=e)
-    if width * height > MAX_PIXELS:
-        raise ConversionError("image_too_large", "decode", name)
-
-    frames = getattr(img, "n_frames", 1)
-    try:
-        img = ImageOps.exif_transpose(img).convert("RGB")   # aquí se decodifica de verdad
-    except Image.DecompressionBombError as e:
-        raise ConversionError("image_too_large", "decode", name, cause=e)
-    except Exception as e:
-        raise ConversionError("image_decode_failed", "decode", name, cause=e)
-    img.thumbnail((MAX_SIDE_PX, MAX_SIDE_PX), Image.LANCZOS)  # solo reduce; mantiene la proporción
+    img, frames = load_image(path, name)
 
     if engine is None:
         from ocr.engine import get_engine  # carga perezosa del motor
         engine = get_engine()
 
-    text, dropped = lines_to_markdown(engine.recognize(img))
+    text, dropped = read_simple(img, engine)
 
     warnings: list[PageIssue] = []
     if dropped:

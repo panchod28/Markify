@@ -17,7 +17,7 @@ from converter import convert_document
 from ocr.base import OcrEngine
 from ocr.diagnostics import ConversionError, PageIssue, log_issue
 from ocr.image_converter import ConversionResult
-from ocr.layout import MIN_CONFIDENCE, lines_to_markdown
+from ocr.recognize import read_simple, read_upright
 from ocr.page_classifier import IMAGE_MIN_AREA, PageKind, PageMetrics, classify_page
 
 Box = tuple[float, float, float, float]  # (izq, abajo, der, arriba) en puntos, en el espacio sin rotar de la página
@@ -166,32 +166,13 @@ def _ocr_page(pdf, i: int, engine: OcrEngine, boxes: list[Box] | None) -> tuple[
         raise ConversionError("page_render_failed", "render", cause=e)
 
     if boxes is None:
-        results = [_read_upright(image, engine)]
+        results = [read_upright(image, engine)]
     else:
         results = []
         for box in boxes:
             crop = image.crop(_to_pixels(box, width, height, rotation, scale))
-            results.append(lines_to_markdown(engine.recognize(crop)))
+            results.append(read_simple(crop, engine))
     return [text for text, _ in results if text], sum(dropped for _, dropped in results)
-
-
-def _read_upright(image, engine: OcrEngine) -> tuple[str, int]:
-    """OCR a 0°; si no se lee texto, prueba 90/180/270° y conserva la orientación con mayor suma
-    confianza × longitud. Solo cuentan las líneas horizontales: el motor también lee texto vertical (página
-    girada 90°) con confianza alta, pero con cajas que el layout no sabe ordenar."""
-    best, best_score = ("", 0), 0.0
-    for angle in (0, 90, 180, 270):
-        lines = [l for l in engine.recognize(image.rotate(angle, expand=True) if angle else image)
-                 if l.box[2] - l.box[0] >= l.box[3] - l.box[1]]
-        candidate = lines_to_markdown(lines)
-        score = sum(l.confidence * len(l.text) for l in lines if l.confidence >= MIN_CONFIDENCE)
-        if candidate[0] and score > best_score:
-            best, best_score = candidate, score
-        if angle == 0 and best[0]:
-            return best  # página recta: sin reintentos
-    if not best[0]:
-        raise ConversionError("ocr_failed", "ocr")
-    return best
 
 
 def _to_pixels(box: Box, width: float, height: float, rotation: int, scale: float) -> tuple[int, int, int, int]:

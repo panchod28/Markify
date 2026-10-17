@@ -13,10 +13,10 @@
 
 ## 2. Fase 1 — Módulos compartidos (refactor sin cambio de comportamiento)
 
-- [ ] 2.1 Extraer `ocr/image_loader.py` (`load_image` desde ruta o bytes: EXIF, transparencia sobre blanco, RGB, límites, ≤ 1 800 px) de `image_converter.py`, que pasa a usarlo
-- [ ] 2.2 Extraer `ocr/recognize.py` (`read_upright` con reintento de orientación y solo líneas horizontales; `read_simple` de un único OCR) de `pdf_pipeline.py`, que pasa a usarlo
-- [ ] 2.3 Tests nuevos de `load_image` (bytes, transparencia, bomba de descompresión, bytes inválidos) y de `read_simple`/`read_upright` con motor falso
-- [ ] 2.4 Verificar que la suite existente (imágenes, PDF, layout, errores) pasa sin tocar sus expectativas
+- [x] 2.1 Extraer `ocr/image_loader.py` (`load_image` desde ruta o bytes: EXIF, transparencia sobre blanco, RGB, límites, ≤ 1 800 px) de `image_converter.py`, que pasa a usarlo *`ocr/image_loader.py::load_image(ruta|bytes, nombre, max_side=2000)` → (imagen RGB, nº de fotogramas). Mejora incluida: la transparencia se compone sobre blanco (antes se descartaba el alfa y el texto negro sobre fondo transparente era ilegible).*
+- [x] 2.2 Extraer `ocr/recognize.py` (`read_upright` con reintento de orientación y solo líneas horizontales; `read_simple` de un único OCR) de `pdf_pipeline.py`, que pasa a usarlo *`ocr/recognize.py`: `read_simple` y `read_upright` (movido tal cual desde `pdf_pipeline`); los recortes de figuras de PDF usan `read_simple`.*
+- [x] 2.3 Tests nuevos de `load_image` (bytes, transparencia, bomba de descompresión, bytes inválidos) y de `read_simple`/`read_upright` con motor falso *`test_ocr_image_loader.py` (8 tests) y `test_ocr_recognize.py` (7 tests, motor falso).*
+- [x] 2.4 Verificar que la suite existente (imágenes, PDF, layout, errores) pasa sin tocar sus expectativas *Suite completa: 135 tests en verde (120 previos + 15 nuevos). Único retoque en tests existentes: dos referencias a constantes que ahora viven en `image_loader` (`MAX_PIXELS`, `MAX_SIDE_PX`); sus expectativas no cambian.*
 
 ## 3. Fase 2 — DOCX (liberable)
 
