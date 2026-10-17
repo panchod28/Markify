@@ -15,10 +15,32 @@ pub struct PendingCheck {
     pub tx: oneshot::Sender<bool>,
 }
 
+/// El primer arranque tras instalar puede tardar ~30 s en macOS (verificación única de las librerías).
+const CHECK_MODEL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// Ruta del ejecutable del sidecar (PyInstaller --onedir).
+/// - `tauri dev`: la carpeta compilada en `src-tauri/binaries/` (sin copiarla a `target/`).
+/// - Instalada: `<recursos>/sidecar/` (ver tauri.macos.conf.json / tauri.windows.conf.json).
+fn sidecar_path(app: &tauri::App) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    let exe = if cfg!(windows) { "markify-sidecar.exe" } else { "markify-sidecar" };
+    let path = if cfg!(debug_assertions) {
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries/markify-sidecar").join(exe)
+    } else {
+        app.path().resolve(format!("sidecar/{}", exe), tauri::path::BaseDirectory::Resource)?
+    };
+    if !path.exists() {
+        return Err(format!(
+            "Sidecar no encontrado en {}. Ejecuta `npm run build:sidecar`.",
+            path.display()
+        ).into());
+    }
+    Ok(path)
+}
+
 pub fn spawn_sidecar(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let sidecar_command = app.shell()
-        .sidecar("markify-sidecar")
-        .map_err(|e| format!("Sidecar no encontrado: {}", e))?;
+    let path = sidecar_path(app)?;
+    eprintln!("[Markify] Lanzando sidecar: {}", path.display());
+    let sidecar_command = app.shell().command(path);
 
     let (mut rx, child) = sidecar_command.spawn()?;
 
@@ -134,7 +156,7 @@ pub async fn check_whisper_model(app: tauri::AppHandle) -> Result<bool, String> 
     write_to_sidecar(&app, &message.to_string()).await
         .map_err(|e| format!("Error: {}", e))?;
 
-    match tokio::time::timeout(std::time::Duration::from_secs(5), rx).await {
+    match tokio::time::timeout(CHECK_MODEL_TIMEOUT, rx).await {
         Ok(Ok(available)) => Ok(available),
         Ok(Err(_)) => Err("Error interno en la comunicación".to_string()),
         Err(_) => {

@@ -5,53 +5,52 @@ Ejecutar desde la raíz del proyecto: npm run build:sidecar
 O directamente: cd sidecar && python build.py
 """
 
+import importlib.util
+import shutil
 import subprocess
 import sys
-import platform
 from pathlib import Path
 
+# Carpeta --onedir que Tauri incluye en la app (ver tauri.macos.conf.json / tauri.windows.conf.json).
+# El ejecutable queda en <OUTPUT_DIR>/markify-sidecar[.exe] y las librerías en <OUTPUT_DIR>/_internal/.
+SIDECAR_NAME = "markify-sidecar"
+OUTPUT_DIR = Path(__file__).parent.parent / "src-tauri" / "binaries" / SIDECAR_NAME
 
-def get_target_triple() -> str:
-    """
-    Retorna el target triple de la plataforma actual.
-    Debe coincidir con el nombre que Tauri espera en src-tauri/binaries/.
-    """
-    system = platform.system()
-    machine = platform.machine()
 
-    if system == "Darwin":
-        if machine == "arm64":
-            return "aarch64-apple-darwin"
-        return "x86_64-apple-darwin"
-    elif system == "Windows":
-        return "x86_64-pc-windows-msvc"
-    elif system == "Linux":
-        return "x86_64-unknown-linux-gnu"
-    else:
-        raise RuntimeError(f"Plataforma no soportada: {system}")
+def setuptools_vendor_path() -> list[str]:
+    """
+    setuptools >= 71 vendoriza jaraco.* en setuptools/_vendor y el runtime hook
+    pyi_rth_pkgres de PyInstaller no lo encuentra; lo añadimos al path de análisis.
+    """
+    spec = importlib.util.find_spec("setuptools")
+    if spec is None or not spec.submodule_search_locations:
+        return []
+    vendor = Path(spec.submodule_search_locations[0]) / "_vendor"
+    return ["--paths", str(vendor)] if (vendor / "jaraco").exists() else []
 
 
 def build():
-    target = get_target_triple()
-    ext = ".exe" if platform.system() == "Windows" else ""
-    binary_name = f"markify-sidecar-{target}{ext}"
-    output_dir = Path(__file__).parent.parent / "src-tauri" / "binaries"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    work_dir = Path(__file__).parent / "build" / "work"
+    dist_dir = OUTPUT_DIR.parent
 
-    print(f"-> Building sidecar para {target}...")
-    print(f"-> Output: {output_dir / binary_name}")
+    # Limpiar la salida anterior: un --onedir viejo mezclado con uno nuevo da fallos difíciles de rastrear.
+    shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
+    dist_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"-> Building sidecar (onedir) en {OUTPUT_DIR}")
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
-        "--onefile",
-        "--name", binary_name,
-        "--distpath", str(output_dir),
-        "--workpath", str(Path(__file__).parent / "build" / "work"),
+        "--onedir",
+        "--name", SIDECAR_NAME,
+        "--distpath", str(dist_dir),
+        "--workpath", str(work_dir),
         "--specpath", str(Path(__file__).parent / "build"),
         "--clean",
         "--noconfirm",
         "--console",
-        "--collect-submodules", "numpy",
+        "--collect-submodules", "numpy._core",
+        "--collect-submodules", "numpy.lib",
         "--collect-all", "magika",
         "--collect-all", "markitdown",
         "--collect-all", "PIL",
@@ -73,6 +72,7 @@ def build():
         "--exclude-module", "notebook",
         "--exclude-module", "IPython",
         "--additional-hooks-dir", str(Path(__file__).parent),
+        *setuptools_vendor_path(),
         "main.py",
     ]
 
@@ -82,7 +82,7 @@ def build():
         print("x Build failed")
         sys.exit(1)
 
-    print(f"v Sidecar compilado exitosamente: {output_dir / binary_name}")
+    print(f"v Sidecar compilado exitosamente: {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":

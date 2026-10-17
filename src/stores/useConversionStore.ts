@@ -296,8 +296,13 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
   // ── checkWhisperModel ─────────────────────────────────────────────────────
 
   checkWhisperModel: async () => {
-    const available = await tauriCommands.checkWhisperModel();
-    set({ whisperModelAvailable: available });
+    try {
+      const available = await tauriCommands.checkWhisperModel();
+      set({ whisperModelAvailable: available });
+    } catch (err) {
+      // Sidecar aún no responde (primer arranque lento): conservar el estado previo.
+      console.error('[Markify] checkWhisperModel failed:', err);
+    }
   },
 
   startModelDownload: async () => {

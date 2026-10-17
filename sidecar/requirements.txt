@@ -1,4 +1,5 @@
-markitdown
+markitdown[all]
 openai-whisper
 torch
+numpy>=2
 PyInstaller==6.8.0

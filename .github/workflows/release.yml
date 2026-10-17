@@ -41,17 +41,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools==70.0.0
           pip install "markitdown[all] @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown"
-          pip install openai-whisper torch PyInstaller
+          pip install -r requirements.txt
 
       - name: Build sidecar
         working-directory: sidecar
         run: python build.py
 
-      - name: Upload sidecar binary
+      # Presupuesto de arranque: la 2ª ejecución del sidecar debe responder en <= 3 s.
+      # Falla el job (y por tanto el release) si el binario no arranca, ensucia stdout o no convierte.
+      - name: Smoke test sidecar
+        working-directory: sidecar
+        run: python smoke_test.py --max-seconds 3
+
+      # tar conserva el bit de ejecución y los symlinks que upload-artifact descarta.
+      - name: Pack sidecar
+        shell: bash
+        run: |
+          tar -cf "sidecar-${{ matrix.target }}.tar" -C src-tauri/binaries markify-sidecar
+          ls -lh "sidecar-${{ matrix.target }}.tar"
+          du -sh src-tauri/binaries/markify-sidecar
+
+      - name: Upload sidecar
         uses: actions/upload-artifact@v4
         with:
           name: sidecar-${{ matrix.target }}
-          path: src-tauri/binaries/markify-sidecar-*
+          path: sidecar-${{ matrix.target }}.tar
           retention-days: 1
 
   build-app:
@@ -84,15 +98,18 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Download sidecar binary
+      - name: Download sidecar
         uses: actions/download-artifact@v4
         with:
           name: sidecar-${{ matrix.target }}
-          path: src-tauri/binaries/
+          path: sidecar-artifact
 
-      - name: Fix binary permissions (Mac/Linux)
-        if: matrix.os != 'windows-latest'
-        run: chmod +x src-tauri/binaries/*
+      - name: Extract sidecar
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          tar -xpf "sidecar-artifact/sidecar-${{ matrix.target }}.tar" -C src-tauri/binaries
+          ls src-tauri/binaries/markify-sidecar
 
       - name: Install npm dependencies
         run: npm ci
