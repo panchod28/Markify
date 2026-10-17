@@ -55,7 +55,7 @@ Tres filtros encadenados; la calibración mostró que el tiempo no es el problem
 2. **Duplicadas** (mismo SHA-1): se leen una vez; el texto se emite solo en la primera aparición. Un logotipo repetido en cada diapositiva no se repite.
 3. **Filtro del resultado**: si el texto reconocido tiene menos de `OFFICE_MIN_TEXT_CHARS` (6) caracteres alfanuméricos se descarta (icono, pictograma). Texto real corto como "Total 42" (7) pasa; "A-12" (3) se pierde: límite aceptado y documentado.
 
-Además: imágenes con tipo `image/x-emf`, `image/x-wmf` o `image/svg+xml` (Pillow no las abre fuera de Windows y ni siquiera allí de forma fiable) no se leen y cuentan en un único aviso `images_skipped`; el tipo decide, no una excepción, para no confundirlas con una imagen corrupta (`image_failed`). En PPTX `shape.image` ya devuelve el PNG de respaldo de un SVG. El alt text real se conserva siempre, también en imágenes pequeñas, y se descarta si coincide con el nombre de la forma, parece un nombre de archivo (`.png`, `.jpg`…) o es un nombre automático del tipo "Picture 3"/"Imagen 3".
+Además: imágenes con tipo `image/x-emf`, `image/x-wmf` o `image/svg+xml` (Pillow no las abre fuera de Windows y ni siquiera allí de forma fiable) no se leen y cuentan en un único aviso `images_skipped`; el tipo decide, no una excepción, para no confundirlas con una imagen corrupta (`image_failed`). En PPTX `shape.image` ya devuelve el PNG de respaldo de un SVG. El alt text real se conserva solo si la imagen es relevante (paso 1) o aporta texto —en un PPTX real de 19 diapositivas, 21 de las 28 descripciones eran títulos de iconos de stock copiados de la web ("Idea - Iconos gratis de negocio…")—, y se descarta siempre si coincide con el nombre de la forma, parece un nombre de archivo (`.png`, `.jpg`…) o es un nombre automático del tipo "Picture 3"/"Imagen 3".
 
 ### D5. Cómo se lee cada imagen
 
@@ -157,7 +157,7 @@ Convertir `.doc`/`.ppt`; OCR en imágenes de XLSX, HTML, EPUB o dentro de PDFs i
 ## Decisiones tomadas (acordadas con el usuario antes de abrir el change)
 
 1. `.doc` y `.ppt` se **rechazan** con un mensaje claro; no se implementa su conversión.
-2. El **alt text se conserva** (solo si es una descripción real).
+2. El **alt text se conserva** (solo si es una descripción real; refinado después de ver un PPTX real: solo en imágenes relevantes o que aportan texto).
 3. En PPTX basta con el texto por diapositiva; este diseño lo mejora colocándolo en la posición de la imagen sin coste extra.
 4. Alcance: **solo DOCX y PPTX** (con PDF, los formatos más usados).
 
@@ -166,6 +166,6 @@ Convertir `.doc`/`.ppt`; OCR en imágenes de XLSX, HTML, EPUB o dentro de PDFs i
 Supuestos tomados por defecto (revisables en la revisión del change):
 
 1. **Formato del alt text**: línea en cursiva (`*texto*`) antes del texto OCR. Alternativa: sin cursiva.
-2. **Imágenes pequeñas con alt text real**: se emite el alt text aunque no se lea la imagen. Alternativa: ignorarlas por completo.
+2. ~~Imágenes pequeñas con alt text real~~ **Resuelta**: el alt text de imágenes pequeñas que no aportan texto se ignora (decisión del usuario tras ver el PPTX real).
 3. **Marcador de imagen fallida en el texto**: ninguno (solo aviso). Alternativa: `<!-- Markify: imagen no se pudo procesar -->` como en las páginas de PDF.
 4. **Umbrales de DOCX**: se calibran en la Fase 0; no se fijan a ciegas.

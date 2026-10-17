@@ -122,6 +122,17 @@ def test_icons_are_not_sent_to_the_engine_but_the_logo_is(docx_files):
     assert engine.calls == 1  # iconos de 32 px (0.1 % de la página) fuera; logotipo de 240 × 70 px dentro
 
 
+def test_alt_text_of_a_small_icon_is_ignored(docx_files):
+    engine = FakeEngine()
+    md = run(docx_files["icono_con_alt"], engine).markdown
+    assert engine.calls == 0 and "Correo de contacto" not in md and "![" not in md
+
+
+def test_alt_text_of_a_relevant_image_is_kept_even_without_text(docx_files):
+    md = run(docx_files["captura_entre_parrafos"], FakeEngine(empty=True)).markdown
+    assert "*Captura del sistema*" in md
+
+
 def test_repeated_image_is_read_once_and_its_text_appears_once(docx_files):
     engine = FakeEngine()
     md = run(docx_files["misma_imagen_repetida"], engine).markdown

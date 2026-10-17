@@ -7,7 +7,8 @@ OCR de las imágenes de DOCX y PPTX. Ver el change add-ocr-office-images.
 - PPTX: cada imagen se sustituye en una copia en memoria por un cuadro de texto en las mismas coordenadas y la copia
   se convierte con markitdown, de modo que el texto sale en el orden de lectura de la diapositiva.
 - Se leen solo imágenes de tamaño mostrado >= OFFICE_MIN_AREA, una vez por imagen distinta, y se descarta el texto
-  de menos de OFFICE_MIN_TEXT_CHARS alfanuméricos (iconos y pictogramas). El alt text real se conserva.
+  de menos de OFFICE_MIN_TEXT_CHARS alfanuméricos (iconos y pictogramas). El alt text real se conserva solo en las
+  imágenes relevantes o que aportan texto.
 """
 
 import hashlib
@@ -228,7 +229,8 @@ def convert_docx(file_path: str, cancel_flag: threading.Event, on_progress: Call
             page_like = bool(size) and min(size) >= FALLBACK_PAGE_LIKE_PX
         text = reader.read(data, image.content_type, relevant, page_like, None)
         index = len(results)
-        results[index] = (real_alt(image.alt_text), text)
+        # El alt text solo acompaña a imágenes relevantes o que aportan texto: el de iconos suele ser basura web
+        results[index] = (real_alt(image.alt_text) if relevant or text else "", text)
         return {"src": f"markify-img:{index}", "alt": ""}
 
     try:
@@ -363,7 +365,8 @@ def convert_pptx(file_path: str, cancel_flag: threading.Event, on_progress: Call
                 descr = shape._element._nvXxPr.cNvPr.attrib.get("descr", "")
             except Exception:
                 descr = ""
-            _replace_with_text(shape, shapes, "\n".join(image_paragraphs(real_alt(descr, shape.name), text)))
+            alt = real_alt(descr, shape.name) if ratio >= OFFICE_MIN_AREA or text else ""  # ver DOCX
+            _replace_with_text(shape, shapes, "\n".join(image_paragraphs(alt, text)))
     except _Cancelled:
         return ConversionResult("", reader.finish())
 

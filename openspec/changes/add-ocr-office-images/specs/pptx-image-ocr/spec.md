@@ -55,11 +55,15 @@ El sistema SHALL descartar el texto reconocido de una imagen cuando tenga menos 
 - **THEN** el `.md` no contiene ese carácter ni líneas de imagen
 
 ### Requirement: Texto alternativo real
-El sistema SHALL conservar el texto alternativo (`descr`) de una imagen cuando sea una descripción real, aunque la imagen no se lea por ser pequeña, y emitirlo como línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con el nombre de la forma, con un nombre de archivo o con un nombre automático.
+El sistema SHALL conservar el texto alternativo (`descr`) de una imagen cuando sea una descripción real **y la imagen sea relevante (≥ `OFFICE_MIN_AREA` de la diapositiva) o aporte texto**, y emitirlo como línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con el nombre de la forma, con un nombre de archivo o con un nombre automático, y SHALL ignorar el de imágenes pequeñas que no aportan texto (iconos), cuya descripción suele ser un título copiado de la web.
 
-#### Scenario: Icono con descripción del autor
+#### Scenario: Imagen relevante con descripción del autor
+- **WHEN** una captura de 12 % de la diapositiva y sin texto reconocible tiene el texto alternativo "Captura del sistema"
+- **THEN** el `.md` contiene `*Captura del sistema*`
+
+#### Scenario: Icono con descripción
 - **WHEN** un icono de 0.2 % de la diapositiva tiene el texto alternativo "Correo de contacto"
-- **THEN** el `.md` contiene `*Correo de contacto*` y no se ejecuta OCR sobre el icono
+- **THEN** el `.md` no contiene esa descripción y no se ejecuta OCR sobre el icono
 
 #### Scenario: Nombre de archivo como descripción
 - **WHEN** el texto alternativo es `image.png`

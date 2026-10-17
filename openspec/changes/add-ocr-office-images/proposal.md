@@ -10,7 +10,7 @@ Es el mismo hueco que tenían los PDFs escaneados: capturas, diagramas rotulados
 ## What Changes
 
 - **OCR de imágenes dentro de DOCX y PPTX**, 100 % local y con el motor del change anterior (`OcrEngine`, `layout`, avisos, cancelación y progreso reutilizados). Se leen las imágenes con texto, se ignoran logos/iconos por tamaño, y el texto reconocido ocupa el lugar de la imagen.
-- **Texto alternativo conservado**: si la imagen trae una descripción real (`descr`/alt text), se emite como línea en cursiva junto al texto OCR; los nombres automáticos ("Imagen 3", "image.png") se descartan.
+- **Texto alternativo conservado**: si la imagen trae una descripción real (`descr`/alt text) y es relevante o aporta texto, se emite como línea en cursiva junto al texto OCR; los nombres automáticos ("Imagen 3", "image.png") y las descripciones de iconos pequeños (títulos de stock copiados de la web) se descartan.
 - **Salida limpia**: desaparecen las referencias rotas (`![..](X.jpg)`, `![](data:...)`).
 - **Sin regresión sin imágenes**: un DOCX/PPTX sin imágenes se convierte exactamente igual que hoy (se delega en `convert_document`).
 - **Degradación elegante**: una imagen que falla no aborta el archivo; se registra un aviso (`image_failed`, con la diapositiva en PPTX). Las imágenes en formatos que Pillow no abre (EMF, WMF…) se cuentan en un aviso agregado (`images_skipped`).

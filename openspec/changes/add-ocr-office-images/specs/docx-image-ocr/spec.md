@@ -67,11 +67,19 @@ El sistema SHALL descartar el texto reconocido de una imagen cuando tenga menos 
 - **THEN** el texto aparece en el `.md`
 
 ### Requirement: Texto alternativo real
-El sistema SHALL conservar el texto alternativo de una imagen cuando sea una descripción real y emitirlo como una línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con un nombre de archivo o con un nombre automático.
+El sistema SHALL conservar el texto alternativo de una imagen cuando sea una descripción real **y la imagen sea relevante (tamaño mostrado ≥ `OFFICE_MIN_AREA`) o aporte texto**, y emitirlo como una línea en cursiva antes del texto reconocido; SHALL descartarlo cuando coincida con un nombre de archivo o con un nombre automático, y SHALL ignorar el de imágenes pequeñas que no aportan texto (iconos), cuya descripción suele ser un título copiado de la web.
 
 #### Scenario: Descripción escrita por el autor
 - **WHEN** una imagen tiene el texto alternativo "Captura del sistema"
 - **THEN** el `.md` contiene `*Captura del sistema*` seguido del texto reconocido de la imagen
+
+#### Scenario: Descripción en una imagen relevante sin texto
+- **WHEN** una captura mostrada a 6 pulgadas de ancho y sin texto reconocible tiene el texto alternativo "Captura del sistema"
+- **THEN** el `.md` contiene `*Captura del sistema*`
+
+#### Scenario: Descripción en un icono pequeño
+- **WHEN** un icono mostrado a 0.3 pulgadas tiene el texto alternativo "Correo de contacto"
+- **THEN** el `.md` no contiene esa descripción
 
 #### Scenario: Nombre automático
 - **WHEN** el texto alternativo es "image.png" o "Imagen 3"

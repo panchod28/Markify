@@ -84,10 +84,15 @@ def test_text_takes_the_picture_position_with_real_alt(pptx_files):
     assert "![" not in md and ".jpg" not in md and result.warnings == []
 
 
-def test_icons_are_not_read_but_a_real_alt_text_is_kept(pptx_files):
+def test_icons_are_not_read_and_their_alt_text_is_ignored(pptx_files):
     engine = FakeEngine()
     md = run(pptx_files["iconos"], engine).markdown
-    assert engine.calls == 0 and "*Correo de contacto*" in md and "![" not in md
+    assert engine.calls == 0 and "Correo de contacto" not in md and "![" not in md
+
+
+def test_alt_text_of_a_relevant_picture_is_kept_even_without_text(pptx_files):
+    md = run(pptx_files["con_figura"], FakeEngine(empty=True)).markdown
+    assert "*Captura del sistema*" in md
 
 
 def test_filename_alt_text_is_dropped(pptx_files):

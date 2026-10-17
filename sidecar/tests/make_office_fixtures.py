@@ -114,6 +114,7 @@ def make_docx_corpus(out: Path) -> dict[str, Path]:
         "captura_entre_parrafos": [("p", "Antes de la imagen."), img(shot, 600, 280, "Captura del sistema"), ("p", "Después de la imagen.")],
         "solo_imagen": [img(page, 620, 877)],
         "pagina_escaneada_180": [("p", "Escaneo girado:"), img(page_180, 620, 877)],
+        "icono_con_alt": [("p", "Texto."), img(icon, 32, 32, "Correo de contacto")],
         "iconos_y_logo": [("p", "Texto."), img(icon, 32, 32), img(logo, 240, 70), img(icon, 32, 32)],
         "misma_imagen_repetida": [("p", "Uno"), img(shot, 600, 280), ("p", "Dos"), img(shot, 600, 280), ("p", "Tres"), img(shot, 600, 280)],
         "imagen_en_tabla": [("p", "Tabla:"), ("table", [["Celda A", img(diagram, 450, 200)], ["Celda C", "Celda D"]])],
