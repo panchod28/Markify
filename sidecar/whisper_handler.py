@@ -3,11 +3,18 @@
 Transcripción de audio/video a Markdown usando Whisper (modo local).
 """
 
+import sys
 import threading
 from pathlib import Path
 from model_manager import get_model_path
 from protocol import write_message
+from whisper_progress import TranscriptionCancelled, hook_progress
 import whisper
+
+
+def _transcribe_module():
+    # `whisper.transcribe` (atributo) es la función; el módulo con el bucle por ventanas está en sys.modules.
+    return sys.modules.get("whisper.transcribe")
 
 
 def transcribe_audio(
@@ -44,13 +51,24 @@ def transcribe_audio(
     if cancel_flag.is_set():
         return ""
 
+    def report(pct: int):
+        write_message({
+            "type": "file_progress",
+            "payload": {"fileId": file_id, "status": "processing", "progress": pct}
+        })
+
     try:
-        result = model.transcribe(
-            file_path,
-            verbose=False,
-            language=None,
-            fp16=False,
-        )
+        # verbose=None: con False Whisper imprime "Detected language: ..." en stdout (no es JSON).
+        # El progreso y la cancelación llegan por el enganche, no por verbose.
+        with hook_progress(_transcribe_module(), cancel_flag, report):
+            result = model.transcribe(
+                file_path,
+                verbose=None,
+                language=None,
+                fp16=False,
+            )
+    except TranscriptionCancelled:
+        return ""
     except Exception as e:
         error_str = str(e).lower()
         if "no speech" in error_str or "too short" in error_str:
@@ -60,11 +78,6 @@ def transcribe_audio(
     text = result.get("text", "").strip()
     if not text:
         raise ValueError("audio_too_short")
-
-    write_message({
-        "type": "file_progress",
-        "payload": {"fileId": file_id, "status": "processing", "progress": 50}
-    })
 
     if cancel_flag.is_set():
         return ""

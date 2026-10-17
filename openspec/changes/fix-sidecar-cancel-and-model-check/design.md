@@ -82,7 +82,7 @@ El lector nunca debe morir: cada comando se despacha dentro de `try/except` que 
 ## Risks / Trade-offs
 
 - **[Dependencia de internals de Whisper]** → versión acotada + prueba de alarma + degradación documentada (D6).
-- **[Cancelación no instantánea]** → latencia = una ventana de Whisper (varios segundos en CPU); se documenta y la UI ya muestra "Cancelando…".
+- **[Cancelación no instantánea]** → latencia = una ventana de Whisper: medido 8.5 s en CPU Apple Silicon con el modelo `base` (frente a ~2 min sin el enganche); se documenta y la UI ya muestra "Cancelando…".
 - **[Concurrencia introduce condiciones de carrera]** → el diseño minimiza superficie (un trabajador, dos comandos atendidos en el lector, lock en la salida, flag con `Event`) y las pruebas D1–D2 cubren los casos de orden.
 - **[Cancelación durante `download_model`]** → no soportada; se descarta sin efectos (D2).
 - **[Modelo truncado cuenta como existente]** → fuera de alcance, anotado.

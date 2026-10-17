@@ -1,5 +1,5 @@
 markitdown[all]
-openai-whisper
+openai-whisper==20250625  # el enganche de progreso depende de whisper.transcribe.tqdm (ver whisper_progress.py)
 torch
 numpy>=2
 PyInstaller==6.8.0

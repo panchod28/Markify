@@ -11,12 +11,12 @@
 
 ## 2. Whisper cancelable con progreso real
 
-- [ ] 2.1 `whisper_handler.py`: llamar a `transcribe(..., verbose=None)` (con `verbose=False` Whisper imprime "Detected language: …" en **stdout**, línea que no es JSON y viola el protocolo; no redirigir `sys.stdout` porque el lector escribe a la vez) y shim `tqdm` (context manager con `update`) que consulta `cancel_flag`, lanza `TranscriptionCancelled` y emite `file_progress` (0–99, solo si cambia el entero); aplicar y restaurar en `try/finally` alrededor de `model.transcribe`
-- [ ] 2.2 Captura de `TranscriptionCancelled` en `transcribe_audio` → devuelve `""`; confirmar que `handle_convert` emite `conversion_cancelled` y no `file_result`
-- [ ] 2.3 Degradación: sin `whisper.transcribe.tqdm` → aviso en stderr y comportamiento previo
-- [ ] 2.4 `requirements.txt`: fijar `openai-whisper==20250625` (ver Open Question 1)
-- [ ] 2.5 `tests/test_whisper_progress.py`: progreso monótono ≤ 99, sin texto no-JSON en stdout, cancelación, restauración del atributo, existencia de `whisper.transcribe.tqdm`
-- [ ] 2.6 Prueba manual con modelo `base`: audio de 113 s → progreso creciente real; cancelar a los ~10 s → `conversion_cancelled` en segundos
+- [x] 2.1 `whisper_handler.py`: llamar a `transcribe(..., verbose=None)` (con `verbose=False` Whisper imprime "Detected language: …" en **stdout**, línea que no es JSON y viola el protocolo; no redirigir `sys.stdout` porque el lector escribe a la vez) y shim `tqdm` (context manager con `update`) que consulta `cancel_flag`, lanza `TranscriptionCancelled` y emite `file_progress` (0–99, solo si cambia el entero); aplicar y restaurar en `try/finally` alrededor de `model.transcribe`
+- [x] 2.2 Captura de `TranscriptionCancelled` en `transcribe_audio` → devuelve `""`; confirmar que `handle_convert` emite `conversion_cancelled` y no `file_result`
+- [x] 2.3 Degradación: sin `whisper.transcribe.tqdm` → aviso en stderr y comportamiento previo
+- [x] 2.4 `requirements.txt`: fijar `openai-whisper==20250625` (ver Open Question 1)
+- [x] 2.5 `tests/test_whisper_progress.py`: progreso monótono ≤ 99, sin texto no-JSON en stdout, cancelación, restauración del atributo, existencia de `whisper.transcribe.tqdm`
+- [x] 2.6 Verificado en macOS (sidecar compilado, modelo `base`, audio de 113 s): sin cancelar, progreso 0 → 25 → 46 y `file_result` en 33 s; cancelando a los 12 s, `conversion_cancelled` 8.5 s después (una ventana de Whisper) y sin `file_result`; ninguna línea no-JSON en stdout
 
 ## 3. Frontend
 
