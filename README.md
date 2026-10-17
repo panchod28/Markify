@@ -62,8 +62,20 @@ Download the latest version from [GitHub Releases](https://github.com/panchod28/
 | Platform | Format |
 |----------|--------|
 | macOS (Apple Silicon) | `.dmg` |
-| macOS (Intel) | `.dmg` |
 | Windows 10/11 (x86_64) | `.msi` / `.exe` |
+
+There is no Intel Mac build yet.
+
+### Before you start
+
+- **FFmpeg is required for audio and video** (MP3, WAV, M4A, OGG, FLAC, AAC, WebM, MP4). Markify does not ship it, so install it once:
+  - macOS: `brew install ffmpeg` ([Homebrew](https://brew.sh))
+  - Windows: `winget install ffmpeg`
+
+  Documents, images and OCR work without it. If you try audio or video without FFmpeg the file fails with a generic conversion error.
+- **The Whisper model (~145 MB) is downloaded the first time you transcribe audio**, so that first time needs an internet connection. Everything else, OCR included, works fully offline.
+- **First launch is slow** (30–40 s on macOS) while the system verifies the app's files; later launches take about 2 s.
+- **macOS asks for confirmation the first time.** The app is not notarized, so macOS may say it cannot verify the developer. Drag Markify to *Applications*, then right-click (or Control-click) it → **Open** → **Open**. If the warning does not offer that, go to *System Settings → Privacy & Security* and click **Open Anyway** next to Markify.
 
 ---
 
@@ -186,12 +198,15 @@ markify/
 │   ├── converter.py            # Document → Markdown
 │   ├── ocr/                    # Local OCR: engine, layout, image, PDF and DOCX/PPTX pipelines
 │   ├── fetch_ocr_models.py     # Downloads the OCR models (build time only, SHA-256 checked)
+│   ├── tests/                  # pytest (generated fixtures) + memory/regression helpers
 │   ├── whisper_handler.py      # Audio → Transcription
 │   ├── model_manager.py        # Whisper model downloader
 │   ├── protocol.py             # JSON stdin/stdout protocol
 │   ├── error_messages.py       # i18n error strings (ES/EN)
 │   └── build.py                # PyInstaller packager
-└── .github/workflows/          # CI/CD pipelines
+├── scripts/gen_licenses.py     # Builds THIRD_PARTY_LICENSES.txt (Python + npm + Rust)
+├── THIRD_PARTY_NOTICES.md      # Third-party components and licenses (also in the installers)
+└── .github/workflows/          # Optional CI pipelines
 ```
 
 ---
@@ -210,6 +225,8 @@ Markify is open source and welcomes contributions! Issues and pull requests in E
 ## License
 
 MIT © 2026 [Juan David Rengifo](https://github.com/panchod28)
+
+Third-party components keep their own licenses: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (full texts in `THIRD_PARTY_LICENSES.txt`, also shipped inside the installers).
 
 ---
 
