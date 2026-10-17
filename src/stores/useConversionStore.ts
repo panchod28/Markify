@@ -363,6 +363,22 @@ export const useConversionStore = create<ConversionStore>((set, get) => ({
   // ── resetToEmpty ──────────────────────────────────────────────────────────
 
   resetToEmpty: () => {
-    set(INITIAL_CONVERSION_STATE);
+    // El modelo Whisper es del equipo, no de la conversión: conservar su estado (si no, "Nueva
+    // conversión" lo daría por ausente y volvería a pedir la descarga).
+    const {
+      whisperModelAvailable,
+      whisperModelDownloading,
+      whisperModelDownloadProgress,
+      whisperModelDownloadedMB,
+      whisperModelTotalMB,
+    } = get();
+    set({
+      ...INITIAL_CONVERSION_STATE,
+      whisperModelAvailable,
+      whisperModelDownloading,
+      whisperModelDownloadProgress,
+      whisperModelDownloadedMB,
+      whisperModelTotalMB,
+    });
   },
 }));

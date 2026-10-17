@@ -20,14 +20,14 @@
 
 ## 3. Frontend
 
-- [ ] 3.1 `useConversionStore.resetToEmpty`: conservar `whisperModelAvailable` y los campos `whisperModel*`
-- [ ] 3.2 Test vitest del store: `resetToEmpty` no reinicia la disponibilidad (el repo aún no tiene tests de vitest: crear solo lo mínimo)
-- [ ] 3.3 `npm run type-check` y `npm run test` sin errores
+- [x] 3.1 `useConversionStore.resetToEmpty`: conservar `whisperModelAvailable` y los campos `whisperModel*`
+- [x] 3.2 Test vitest del store: `resetToEmpty` no reinicia la disponibilidad (el repo aún no tiene tests de vitest: crear solo lo mínimo)
+- [x] 3.3 `npm run type-check` y `npm run test` sin errores
 
 ## 4. Verificación de extremo a extremo (macOS)
 
-- [ ] 4.1 Build `--onedir` + app: con el modelo ya descargado, abrir la app, añadir audio y pulsar Convertir → **sin** modal; tras "Nueva conversión" tampoco
-- [ ] 4.2 Audio largo → Cancelar → la UI sale de "Cancelando…" en segundos y vuelve a archivos listos; sin `file_result` completado
+- [x] 4.1 Verificado en la UI (macOS, `.app` con el sidecar nuevo y el modelo ya presente): audio corto → convierte **sin** modal; tras "Nueva conversión", audio largo → procesa **sin** modal
+- [x] 4.2 Verificado en la UI: audio de 113 s → Cancelar → "Cancelando…" y a los ≤ 7 s la lista vuelve a archivos listos (botón Convertir), sin resultado completado (antes: ~2 min y "convertido correctamente")
 - [ ] 4.3 Lote mixto (DOCX + audio + CSV) cancelado a mitad: los archivos no procesados no se ejecutan
 - [ ] 4.4 Cierre de la app durante una transcripción: el sidecar termina (sin procesos huérfanos)
 - [ ] 4.5 Repetir 4.1–4.4 en Windows (VM o CI)
