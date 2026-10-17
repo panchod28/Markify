@@ -42,10 +42,10 @@
 
 ## 5. Fase 4 — Rechazo de `.doc` y `.ppt` (liberable)
 
-- [ ] 5.1 Frontend: `LEGACY_EXTENSIONS = ['doc','ppt']`, `doc`/`ppt` fuera de `DOCUMENT_EXTENSIONS`; error de validación `legacy_format` en `useConversionStore` y su mensaje en `ValidationErrorToast`; i18n ES/EN
-- [ ] 5.2 Tests vitest: extensiones y categorías (incluido `.xls` aceptado, `.xyz` genérico), validación `legacy_format` en un lote mixto, claves i18n ES/EN
-- [ ] 5.3 Sidecar: `ConversionError("legacy_format")` para `.doc`/`.ppt` en `handle_convert` + mensajes ES/EN + test
-- [ ] 5.4 Verificación manual macOS: arrastrar `.doc` junto a un `.docx`; selector sin `.doc`/`.ppt`
+- [x] 5.1 Frontend: `LEGACY_EXTENSIONS = ['doc','ppt']`, `doc`/`ppt` fuera de `DOCUMENT_EXTENSIONS`; error de validación `legacy_format` en `useConversionStore` y su mensaje en `ValidationErrorToast`; i18n ES/EN *`LEGACY_EXTENSIONS`/`LEGACY_REPLACEMENT` en `types`, `doc`/`ppt` fuera de `DOCUMENT_EXTENSIONS` y del mapa de iconos, `isLegacyExtension`, error `legacy_format` en las dos rutas de `useConversionStore` (archivos y rutas), mensaje en `ValidationErrorToast` y claves `errors.legacyFormat` ES/EN con la extensión moderna sugerida.*
+- [x] 5.2 Tests vitest: extensiones y categorías (incluido `.xls` aceptado, `.xyz` genérico), validación `legacy_format` en un lote mixto, claves i18n ES/EN *vitest: 11 tests (+4): `.doc`/`.ppt` legacy y no soportados, `.docx`/`.pptx`/`.xlsx`/`.xls` aceptados, lote mixto con `legacy_format` + `unsupported` conservando el archivo válido, `.xls` aceptado.*
+- [x] 5.3 Sidecar: `ConversionError("legacy_format")` para `.doc`/`.ppt` en `handle_convert` + mensajes ES/EN + test *`converter.convert_document` lanza `ConversionError("legacy_format")` para `.doc`/`.ppt` (antes de cualquier otra comprobación del contenido); mensajes ES/EN en `MESSAGES`; `tests/test_legacy_formats.py` (6 tests, incluye mayúsculas y que csv/html no se ven afectados).*
+- [ ] 5.4 Verificación manual macOS: arrastrar `.doc` junto a un `.docx`; selector sin `.doc`/`.ppt` *Selector de archivos de la `.app`: `.doc` y `.ppt` aparecen deshabilitados y solo `.docx` es seleccionable. **Falta** comprobar a mano el aviso al arrastrar un `.doc` (no se pudo automatizar el arrastre sin tocar ventanas personales del Finder); lo cubren los tests de vitest.*
 
 ## 6. Fase 5 — Empaquetado, CI y smoke
 
