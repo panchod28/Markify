@@ -391,7 +391,7 @@ Before tagging a release, regenerate the third-party license texts in the build 
 sidecar/.venv/bin/python scripts/gen_licenses.py --check
 ```
 
-Releases are automated via GitHub Actions (`.github/workflows/release.yml`). Pushing a tag matching `v*` triggers the build pipeline:
+The workflow in `.github/workflows/release.yml` can build the installers on GitHub's runners, but **its tag trigger is currently disabled** (it only runs when started by hand from the Actions tab), so creating a tag or a release does not start it. To use it again, restore `push: tags: ['v*']` in its `on:` block; then pushing a tag matching `v*` triggers the build pipeline:
 
 ```bash
 git tag v1.1.0

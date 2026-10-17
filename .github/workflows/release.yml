@@ -1,9 +1,9 @@
 name: Release
 
+# Disparo por tag desactivado: de momento los instaladores se construyen a mano (CONTRIBUTING, "Manual release").
+# Para volver a usar Actions, restaura `push: tags: ['v*']` aquí.
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-sidecar:
