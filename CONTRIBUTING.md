@@ -330,13 +330,14 @@ markify/
 
 Found while adding OCR; not fixed there on purpose:
 
-- **Whisper model path when frozen** (`sidecar/model_manager.py::get_model_path`): in a packaged build it points next to the sidecar executable (inside the app bundle / install folder), not to a per-user writable data directory. It works while that folder is writable and breaks on read-only or per-machine installs.
+- **Whisper model path when frozen** (`sidecar/model_manager.py::get_model_path`): in a packaged build it points next to the sidecar executable (inside the app bundle / install folder), not to a per-user writable data directory. It works while that folder is writable and breaks on read-only or per-machine installs. Confirmed on Windows: the `.msi` (`ALLUSERS=1`) installs into `Program Files`, `get_model_path()` raises `PermissionError` there and `check_model` gets no answer, so audio/video fail unless the app runs as administrator (the `.exe` NSIS per-user install in `%LOCALAPPDATA%\Markify` is fine). The v1.1.0-beta notes say so. The proposed fix is to use `%LOCALAPPDATA%\Markify\models` on Windows when frozen (same folder the NSIS install already uses, so no re-download).
 - **First launch after install is slow** (30–50 s on macOS) because the OS verifies the new files once; the UI gives no hint during that wait.
 - **No per-page timeout in OCR**: ONNX Runtime inference cannot be interrupted, so cancelling takes effect between pages, not inside one.
 - **Mixed PDFs lose pdfplumber tables**: once a PDF has any scanned or mixed page, native-text pages are extracted with pdfminer per page, so table detection is lost on them. All-text PDFs are unchanged.
 - **Whisper picks the audio language automatically** (`language=None`). It works with natural voices (Spanish clips from Mónica/Paulina were detected as `es` with probability 1.0); a robotic novelty voice (macOS "Eddy") was misdetected and garbled even when forcing `es`, so that was the audio, not the app. If users report misdetections, add an "audio language" option (Auto / Español / English) passed as `language=` to `model.transcribe`.
 - **Images in Office files**: crops and rotations applied inside the document are ignored, DOCX headers/footers are not extracted, text of fewer than 6 letters/digits inside an image is dropped, and the alt text of small images is ignored on purpose (in a real deck it was stock-icon titles copied from the web).
-- **OCR memory on Windows is unmeasured**; the ≤ 1.5 GB budget was measured on Apple Silicon only.
+- **OCR memory on Windows**: 60-page run on an i5-8400 / 8 GB: 182 MB working set, 1.26 s/page (the macOS peak was 1.1 GB; the script samples after each page, so it can miss transient peaks). The packaged sidecar starts in ~4 s there, above the 3 s budget.
+- **Building the sidecar on Windows**: with PyInstaller 6.8.0 and a recent `pyinstaller-hooks-contrib`, `build.py` fails with `PackageNotFoundError: importlib_metadata` unless `pip install importlib_metadata` is run in the venv. A venv that has stray packages (e.g. `EbookLib`, AGPL) makes `gen_licenses.py --check` fail even though they are not bundled: use a clean venv.
 
 ---
 
@@ -383,7 +384,9 @@ Then, from the UI of the built app, convert a folder made with `python sidecar/t
 - **Do not leave a Whisper model inside `src-tauri/binaries/`** (`models/whisper/base.pt`): it would be bundled and add ~145 MB. The app downloads it on first use.
 - **macOS signing**: `tauri.macos.conf.json` sets `signingIdentity` to `-` (ad-hoc) so the whole bundle, including the sidecar copied into `Resources/`, is signed *after* it is assembled. Without it the signature is invalid (`codesign --verify --deep` fails) and a downloaded copy may be reported as "damaged" instead of the usual "unidentified developer" warning. There is no Apple notarization, so users must approve it the first time (*Open Anyway* in System Settings on macOS 15+, right-click → Open before; see the README).
 
-Upload the `.dmg` (and, later, the Windows installer) to the repository's releases page.
+On Windows `npm run tauri build` produces `src-tauri/target/release/bundle/msi/Markify_<version>_x64_en-US.msi` and `.../nsis/Markify_<version>_x64-setup.exe` (WiX and NSIS are downloaded on first use). There is no code signing. `make_regression_folder.py` only works on macOS; on Windows the portable parts (`documents()` and `images()`) can be reused.
+
+Upload the `.dmg` and the Windows `.exe` / `.msi` to the repository's releases page.
 
 ### GitHub Actions (optional, not used at the moment)
 

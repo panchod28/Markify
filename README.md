@@ -62,9 +62,11 @@ Download the latest version from [GitHub Releases](https://github.com/panchod28/
 | Platform | Format |
 |----------|--------|
 | macOS (Apple Silicon) | `.dmg` |
-| Windows 10/11 (x86_64) | `.msi` / `.exe` |
+| Windows 10/11 (x86_64) | `.exe` (recommended, per user) / `.msi` (all users, see below) |
 
 There is no Intel Mac build yet.
+
+On Windows prefer the `.exe`. The `.msi` installs into `Program Files`, where the Whisper model (downloaded the first time you transcribe audio or video) cannot be saved by a normal user, so audio and video only work if you run Markify as administrator. Documents, images and OCR work with both. Windows SmartScreen warns the first time because the installers are not code-signed: click **More info → Run anyway**.
 
 ### Before you start
 
