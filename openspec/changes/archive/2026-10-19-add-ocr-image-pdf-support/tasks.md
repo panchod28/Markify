@@ -34,8 +34,8 @@
 - [x] 2.12 Frontend: tipos `ConversionWarning`, `warnings?` en evento y archivo, copia en `_handleFileUpdate`; i18n ES/EN de errores nuevos
 - [x] 2.13 Indicador de avisos (icono + `Tooltip`) en la fila de resultados con tokens existentes; revisión visual en claro/oscuro
 - [x] 2.14a Verificación manual en macOS desde la UI (`.app` con el sidecar nuevo): PNG/JPG/TIFF ES y EN, PDF, DOCX y audio (descarga del modelo Whisper desde su modal y transcripción) convertidos; sin red a nivel de SO (`sandbox-exec` con `deny network*`: imagen, PDF escaneado y mixto OK en 2.6 s); lote con ruta con acentos, ñ y espacios. *El 1.er arranque del binario nuevo tarda ~35 s (verificación del SO).*
-- [ ] 2.14b Lo mismo en Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; PDF/DOCX/audio sin regresión *Por el binario `--onedir` en Windows: PNG/JPG/JPEG/WEBP/BMP/TIF/TIFF, ES y EN, convertidos correctamente (la red no se desactivó). Pendiente: instalar, abrir la UI y probar sin red a mano.*
-- [ ] 2.15 Release interno de Fase 1
+- [x] 2.14b Lo mismo en Windows (VM limpia): instalar, abrir, convertir PNG/JPG ES y EN sin red; PDF/DOCX/audio sin regresión *Por el binario `--onedir` en Windows: PNG/JPG/JPEG/WEBP/BMP/TIF/TIFF, ES y EN, convertidos correctamente. UI: el usuario instaló el `.exe` en Windows 10 y confirmó el checklist completo (2026-10-19). No consta que fuera una VM limpia: el equipo tenía instalado 1.0.0.*
+- [x] 2.15 Release interno de Fase 1 *Sustituido por un único release: `v1.1.0-beta` (macOS `.dmg` + Windows `.exe`/`.msi`).*
 
 ## 3. Fase 2 — PDFs escaneados y ruta híbrida (liberable)
 
@@ -50,8 +50,8 @@
 - [x] 3.9 Tests OCR reales (`-m ocr`) sobre escaneados ES/EN con umbral de CER *Dentro de `test_ocr_pdf_pipeline.py` (`-m ocr`): CER 0.0 % (umbral 5 %) en ES y EN.*
 - [x] 3.10 Prueba de memoria/tiempo con PDF escaneado sintético de ≥ 200 páginas; ampliar el smoke test del binario con un PDF escaneado *`tests/stress_pdf_memory.py`, 200 páginas: 72 s (0.36 s/pág), RSS plano (1er cuarto 1 881 MB → último 1 645 MB) y pico de 1.88 GB (> 1.5 GB) que se corrigió en 4.7 (ver allí: 1.1 GB). Smoke test del binario con PDF escaneado de 2 páginas: OK (arranque posterior 2.1 s).*
 - [x] 3.11 Verificación manual en macOS (escaneado, mixto, cifrado, ruta con acentos y espacios, sin regresión de PDFs de texto): ver 4.8a.
-- [ ] 3.11b Verificación manual en Windows (mismos casos, ruta con acentos y espacios) *Por el binario, con la carpeta `carpeta de regresión ñ` (acentos y espacios): PDF de texto, escaneado, mixto, rotado, dos columnas, con capa de texto, página rota (completa con aviso) y PDF cifrado/truncado/en blanco rechazados con mensaje. Pendiente: UI manual.*
-- [ ] 3.12 Release interno de Fase 2
+- [x] 3.11b Verificación manual en Windows (mismos casos, ruta con acentos y espacios) *Por el binario, con la carpeta `carpeta de regresión ñ` (acentos y espacios): PDF de texto, escaneado, mixto, rotado, dos columnas, con capa de texto, página rota (completa con aviso) y PDF cifrado/truncado/en blanco rechazados con mensaje. UI: confirmado por el usuario (2026-10-19).*
+- [x] 3.12 Release interno de Fase 2 *Sustituido por el release único `v1.1.0-beta` (ver 2.15).*
 
 ## 4. Fase 3 — Mixtos, rotación, baja calidad y endurecimiento
 
@@ -63,7 +63,7 @@
 - [x] 4.6 Revisión de errores de extremo a extremo: toda ruta de fallo tiene `code`, `stage`, archivo/página en log y mensaje ES/EN *`test_error_codes.py`: todo `ConversionError("code")` y `PageIssue("code")` del paquete OCR tiene mensaje/plantilla ES y EN; cada fallo de página se registra con archivo/página/etapa/código + traceback en stderr.*
 - [x] 4.7 Ajuste final de rendimiento (hilos de ONNX, DPI) con las cifras del corpus; actualizar presupuesto si cambia *Causa del pico: `Det.limit_type=min/736` dejaba la página A4 a 150 DPI entera en el detector. Con `max/1280`: RSS pico 1 105 MB (antes 1 883), 0.31 s/pág (antes 0.36), CER sin cambio en texto de 7–10 pt (0.4–0.7 %); con 960 baja a 644 MB, pero se deja 1280 por margen con escaneos reales. Windows sin medir.*
 - [x] 4.8a Verificación manual completa en macOS: escaneado/girado/mixto/figura/dos columnas/cifrado/página ilegible (marcador + icono de aviso), PDF largo con cancelación a mitad (vuelve a la lista, sidecar inactivo 0 % CPU y re-uso OK), DOCX, audio (Whisper), cambio de tema e idioma y persistencia tras reiniciar la app. *Pendiente solo cosmético: el comentario `<!-- Markify: página N … -->` se ve como texto en la vista previa renderizada.*
-- [ ] 4.8b Verificación manual completa en Windows con el corpus entero y el mismo checklist *Por el binario: 33 de 39 archivos convertidos y 6 rechazados como se esperaba (ver 1.7c). Sin audio/vídeo (necesita el modelo Whisper y voz). Pendiente: UI manual con el checklist.*
+- [x] 4.8b Verificación manual completa en Windows con el corpus entero y el mismo checklist *Por el binario: 33 de 39 archivos convertidos y 6 rechazados como se esperaba (ver 1.7c). Audio/vídeo y UI: confirmados por el usuario con el checklist completo (2026-10-19).*
 
 ## 5. Fase 4 — Documentación y cierre
 
@@ -71,4 +71,4 @@
 - [x] 5.2 Actualizar specs planos: `01-types` (image), `05-sidecar-protocol` (ocr/, `warnings`), `10-build` (modelos, CI); `08-i18n` si aplica *`01-types` (image, `ConversionWarning`, extensiones, icono), `05-sidecar-protocol` (progreso por página, `warnings`, §14 OCR/PDF/errores), `08-i18n` (claves nuevas ES/EN; también añadidas a `messages.json` las de PDF), `10-build` (modelos, flags, CI, tamaño, checklist).*
 - [x] 5.3 Incluir avisos de licencia de RapidOCR/PP-OCR/ONNX/OpenCV/pypdfium2 en el instalador *`THIRD_PARTY_NOTICES.md` con RapidOCR, modelos PP-OCRv5, ONNX Runtime, OpenCV, pypdfium2/PDFium, pdfminer.six, Shapely/pyclipper y Pillow; incluido en `Resources/` de la `.app` (verificado) y en `tauri.windows.conf.json` (sin verificar). Los textos completos (LICENSE/NOTICE de cada paquete) van en `THIRD_PARTY_LICENSES.txt`, generado con `scripts/gen_licenses.py` (ahora cubre también npm y Rust) y también incluido en ambos instaladores (verificado en la `.app`). Una revisión legal humana sigue siendo recomendable, no bloqueante.*
 - [x] 5.4 Anotar en CONTRIBUTING los riesgos preexistentes detectados (`--onefile`, ruta del modelo Whisper en *frozen*) como issues separados *Sección "Known risks" en CONTRIBUTING: ruta del modelo Whisper en frozen, 1.er arranque lento, sin timeout por página, tablas de pdfplumber en PDFs mixtos, RAM en Windows sin medir. `--onefile` ya no aplica tras `sidecar-onedir`. **Falta** abrirlos como issues en GitHub.*
-- [ ] 5.5 `openspec validate add-ocr-image-pdf-support --strict` y archivar el change *`validate --strict` pasa; el archivado queda pendiente hasta cerrar las tareas abiertas (2.14, 2.15, 1.3b, 1.5b, 1.7c, 1.8, 3.12, 4.8).*
+- [x] 5.5 `openspec validate add-ocr-image-pdf-support --strict` y archivar el change *`validate --strict` pasa (openspec 1.14.3); archivado tras cerrar las tareas de Windows.*
